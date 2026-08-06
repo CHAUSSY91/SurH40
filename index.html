@@ -12,7 +12,6 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="SurH40">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="description" content="Suivi d'habitudes, calendrier et outils mentaux.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
@@ -184,6 +183,15 @@ h2.title{font-family:'Cinzel',serif;font-size:27px;letter-spacing:.11em;margin:0
 .detail{padding:0 14px 15px 51px;color:var(--dim);font-size:15px;white-space:pre-wrap;
   display:none;font-weight:300}
 .detail.open{display:block}
+.acts{display:flex;flex-wrap:wrap;gap:6px;margin-top:11px}
+.acts button{background:rgba(0,0,0,.25);border:1px solid var(--trait);border-radius:var(--r);
+  color:var(--dim);font:inherit;font-size:12.5px;padding:6px 11px;cursor:pointer}
+.acts button:hover{border-color:var(--or);color:var(--or)}
+.acts button.dg:hover{border-color:var(--rouge);color:var(--rouge)}
+.pz{margin-top:10px;padding:9px 11px;border:1px dashed rgba(201,162,39,.4);border-radius:var(--r);
+  font-size:13.5px;color:var(--or);display:flex;flex-wrap:wrap;gap:9px;align-items:center}
+.pz button{background:none;border:1px solid rgba(201,162,39,.4);border-radius:var(--r);
+  color:var(--or);font:inherit;font-size:12.5px;padding:4px 10px;cursor:pointer}
 .detail .del{background:none;border:0;color:var(--rouge);font-size:13px;padding:9px 0 0;cursor:pointer}
 .empty{color:var(--dim);font-size:14.5px;font-style:italic;padding:2px 0 12px;font-weight:300}
 .add{
@@ -269,6 +277,9 @@ label{display:block;font-family:'Barlow Condensed',sans-serif;text-transform:upp
 .tl .h small{display:block;color:var(--dim);font-size:11px}
 .tl .ti{flex:1;font-size:15.5px;font-weight:300}
 .tl .ti em{display:block;font-style:normal;font-size:12.5px;color:var(--dim);margin-top:2px}
+.lib{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px}
+.lib button{background:rgba(201,162,39,.09);border:1px solid rgba(201,162,39,.35);border-radius:20px;
+  color:var(--or);font:inherit;font-size:13px;padding:6px 13px;cursor:pointer}
 .days7{display:flex;gap:5px;margin-bottom:13px}
 .days7 button{flex:1;background:rgba(0,0,0,.25);border:1px solid var(--trait);border-radius:var(--r);
   color:var(--dim);padding:10px 0;font:inherit;font-size:13px;cursor:pointer}
@@ -369,6 +380,10 @@ label{display:block;font-family:'Barlow Condensed',sans-serif;text-transform:upp
 .acc.open .acchead .c{transform:rotate(90deg)}
 .accbody{padding:0 17px 18px;display:none}
 .acc.open .accbody{display:block;animation:fade .25s ease}
+.sugg{margin:-4px 0 14px;padding:10px 13px;border-left:2px solid var(--or);
+  background:rgba(201,162,39,.06);border-radius:0 var(--r) var(--r) 0;font-size:14px;
+  font-weight:300;color:var(--dim)}
+.sugg b{color:var(--or);font-weight:600}
 .rule{color:var(--dim);font-size:14.5px;font-weight:300;font-style:italic;
   border-left:2px solid var(--or);padding:2px 0 2px 13px;margin:0 0 16px}
 .entry{background:rgba(0,0,0,.22);border:1px solid var(--trait);border-radius:var(--r);
@@ -504,11 +519,12 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,seuilJour:70,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,seuilJour:70,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
 let view='home',moment='matin',detailId=null,badOpen=false,badStatOpen=false,openTool=null;
+const openDet=new Set();
 
 const iso=d=>{const x=new Date(d);return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');};
 const today=()=>iso(new Date());
@@ -556,6 +572,22 @@ const QUOTES=[
 ];
 const NIVEAUX=[{v:60,n:'Novice'},{v:70,n:'Régulier'},{v:80,n:'Boss'}];
 const niveauNom=v=>(NIVEAUX.find(x=>x.v===v)||{n:'Perso'}).n;
+const MOODS=[
+ {v:1,t:'Boss',d:"tout tenu, aucun écart. C'est la référence."},
+ {v:2,t:'Ça tient',d:"la structure a résisté, malgré une accroc ou deux."},
+ {v:3,t:'Attention, relâche',d:"le fil se détend. C'est maintenant qu'on reprend, pas dans trois jours."},
+ {v:4,t:'Ressaisis-toi',d:"la journée t'a échappé. Une seule ligne à récupérer demain, pas cinq."},
+ {v:5,t:'Abandon',d:"rien tenu. Ça arrive. Ce qui compte, c'est que demain existe."}];
+function suggMood(date){
+  const sc=dayScore(date);
+  const ec=(S.cheats[date]||[]).length+itemsFor('soir','bad',date).filter(i=>!isDone(i.id,date)).length;
+  if(!sc.tot)return MOODS[4];
+  if(sc.pct>=95&&ec===0)return MOODS[0];
+  if(sc.pct>=seuilJ()&&ec<=1)return MOODS[1];
+  if(sc.pct>=50)return MOODS[2];
+  if(sc.pct>=25)return MOODS[3];
+  return MOODS[4];
+}
 const TAUNTS=[
  "Tu tombes dans le nihilisme ou quoi ? Branleur !",
  "Trois écarts. Et tu comptais raconter quoi à tes gamins, exactement ?",
@@ -572,9 +604,38 @@ function shift(date,n){const d=new Date(date);d.setDate(d.getDate()+n);return is
 function lastDays(n){const a=[];for(let k=n-1;k>=0;k--)a.push(shift(new Date(),-k));return a;}
 
 /* ================= LOGIQUE ================= */
+function inPause(i,date){
+  return (i.pauses||[]).some(p=>date>=p.from&&(!p.to||date<=p.to));
+}
+function applies(i,date){
+  if(inPause(i,date))return false;
+  if(!i.recurrent)return i.date===date;
+  if(i.created>date)return false;
+  const dw=new Date(date).getDay();
+  return !i.days||!i.days.length||i.days.includes(dw);
+}
 function itemsFor(mom,type,date){
-  return S.items.filter(i=>i.moment===mom&&i.type===type&&
-    (i.recurrent?i.created<=date:i.date===date));
+  return S.items.filter(i=>i.moment===mom&&i.type===type&&applies(i,date))
+    .sort((a,b)=>(a.ord??0)-(b.ord??0));
+}
+function nextOrd(mom,type){
+  const l=S.items.filter(i=>i.moment===mom&&i.type===type);
+  return l.length?Math.max(...l.map(i=>i.ord??0))+1:0;
+}
+function moveItem(id,dir){
+  const it=S.items.find(x=>x.id===id);if(!it)return;
+  const l=S.items.filter(x=>x.moment===it.moment&&x.type===it.type)
+    .sort((a,b)=>(a.ord??0)-(b.ord??0));
+  const k=l.findIndex(x=>x.id===id),j=k+dir;
+  if(j<0||j>=l.length)return;
+  const a=l[k].ord??k,b=l[j].ord??j;
+  l[k].ord=b;l[j].ord=a;save();
+}
+const JOURS=['di','lu','ma','me','je','ve','sa'];
+function freqLabel(i){
+  if(!i.recurrent)return 'ponctuel';
+  if(!i.days||i.days.length===7||!i.days.length)return 'OBJ40';
+  return i.days.slice().sort().map(d=>JOURS[d]).join(' ');
 }
 /* état : 0 = en cours (gris), 1 = OK (vert), 2 = NOK (rouge) */
 const state=(id,date)=>(S.log[date]&&S.log[date][id])||0;
@@ -707,8 +768,9 @@ function renderMoment(){
       <label>Ce qui a marché</label><textarea id="jgood">${esc(j.good||'')}</textarea>
       <label>Ce qui a lâché</label><textarea id="jbad">${esc(j.bad||'')}</textarea>
       <label>Note de la journée</label>
-      <select id="jmood">${[['','—'],['5','5 · journée pleine'],['4','4 · bonne'],['3','3 · correcte'],['2','2 · difficile'],['1','1 · dure']]
+      <select id="jmood">${[['','—']].concat(MOODS.map(m=>[m.v,m.v+'. '+m.t]))
         .map(o=>`<option value="${o[0]}"${j.mood==o[0]?' selected':''}>${o[1]}</option>`).join('')}</select>
+      <div class="sugg">Au vu de ta journée : <b>${suggMood(date).v}. ${suggMood(date).t}</b> — ${suggMood(date).d}</div>
       <button class="btn" id="jsave" style="width:100%">Enregistrer le bilan</button></div>`;
   }
   document.getElementById('m-body').innerHTML=h;
@@ -730,12 +792,26 @@ function itemHTML(i,date,extra){
   const bad=i.type==='bad',s=state(i.id,date);
   const cls=bad?(s===1?'on':''):(s===1?'ok':s===2?'no':'');
   const wrap=bad?(s===1?'done':''):(s===1?'done':s===2?'nok':'');
+  const f=freqLabel(i);
   return `<div class="item pan ${extra} ${wrap}"><div class="head">
     <button class="check ${cls}" data-${bad?'togbad':'tog'}="${i.id}" aria-label="${esc(i.name)}"></button>
     <button class="nametap" data-det="${i.id}">${esc(i.name)}</button>
-    <span class="tag ${i.recurrent?'obj':'pon'}">${i.recurrent?'OBJ40':'ponctuel'}</span></div>
-    <div class="detail" id="det-${i.id}">${i.detail?esc(i.detail):'<em>Pas de détail écrit.</em>'}
-    <br><button class="del" data-del="${i.id}">Supprimer cette ligne</button></div></div>`;
+    <span class="tag ${i.recurrent?'obj':'pon'}">${f}</span></div>
+    <div class="detail${openDet.has(i.id)?' open':''}" id="det-${i.id}">${i.detail?esc(i.detail):'<em>Pas de détail écrit.</em>'}
+    <div class="acts">
+      <button data-up="${i.id}" title="Monter">▲</button>
+      <button data-down="${i.id}" title="Descendre">▼</button>
+      <button data-edit="${i.id}">Modifier</button>
+      <button data-pause="${i.id}">Pause</button>
+      <button class="dg" data-del="${i.id}">Supprimer</button>
+    </div>${pauseInfo(i)}</div></div>`;
+}
+function pauseInfo(i){
+  const l=(i.pauses||[]).filter(p=>!p.to||p.to>=today());
+  if(!l.length)return '';
+  return `<div class="pz">`+l.map((p,k)=>
+    `<span>En pause du ${p.from} ${p.to?'au '+p.to:'(sans fin)'}</span>
+     <button data-unpause="${i.id}|${k}">Reprendre</button>`).join('')+`</div>`;
 }
 function badBlock(date){
   const list=itemsFor('soir','bad',date);
@@ -892,7 +968,7 @@ function donut(pct,size,color){
 
 /* ================= STATS ================= */
 function itemPerf(i,days){
-  let rel=days.filter(d=>i.recurrent?i.created<=d:i.date===d);
+  let rel=days.filter(d=>applies(i,d));
   if(i.type!=='bad')rel=rel.filter(d=>state(i.id,d)!==0);
   if(!rel.length)return null;
   const done=rel.filter(d=>isDone(i.id,d)).length;
@@ -1254,27 +1330,93 @@ function sheetClose(){document.getElementById('sheet').classList.remove('on');}
 document.getElementById('sheet').onclick=e=>{if(e.target.id==='sheet')sheetClose();};
 function focusFirst(){setTimeout(()=>{const f=document.getElementById('f-name');if(f)f.focus();},90);}
 
-function formItem(type){
-  const L={habit:'Nouvelle habit',todo:'Nouvelle chose à faire',bad:'Nouveau comportement'}[type];
+function formItem(type,editId){
+  const ed=editId?S.items.find(x=>x.id===editId):null;
+  if(ed)type=ed.type;
+  const L=ed?'Modifier':{habit:'Nouvelle habit',todo:'Nouvelle chose à faire',bad:'Nouveau comportement'}[type];
+  const lib=(S.library||[]).filter(x=>x.type===type&&!S.items.some(i=>i.name===x.name&&i.moment===moment&&i.type===type));
   sheetOpen(`<h3>${L} · ${MOMENTS[moment].t}</h3>
-    <label>Nom</label><input type="text" id="f-name" autocomplete="off"
+    ${(!ed&&lib.length)?`<label>Reprendre une ligne connue</label>
+      <div class="lib">${lib.map((x,k)=>`<button data-lib="${k}">${esc(x.name)}</button>`).join('')}</div>`:''}
+    <label>Nom</label><input type="text" id="f-name" autocomplete="off" value="${ed?esc(ed.name):''}"
       placeholder="${type==='bad'?'Alcool, sucre, café, écrans…':'Skincare, sport, prière…'}">
-    <label>Détail</label><textarea id="f-det" placeholder="${type==='bad'?'Ce que ça veut dire exactement pour toi.':'1. Nettoyant\n2. Essence\n3. Contour des yeux\n4. Crème + SPF'}"></textarea>
+    <label>Détail</label><textarea id="f-det" placeholder="1. Nettoyant\n2. Essence\n3. Contour des yeux">${ed?esc(ed.detail||''):''}</textarea>
     <label>Fréquence</label>
-    <div class="choice"><button id="c-obj" class="sel">OBJ40 · récurrent</button><button id="c-pon">Ponctuel · une date</button></div>
-    <div id="dwrap" style="display:none"><label>Date</label><input type="date" id="f-date" value="${iso(cursor)}"></div>
-    <div class="btnrow"><button class="btn" id="f-ok">Créer</button><button class="btn ghost" id="f-no">Annuler</button></div>`);
-  let rec=true;
-  const o=document.getElementById('c-obj'),p=document.getElementById('c-pon'),w=document.getElementById('dwrap');
-  o.onclick=()=>{rec=true;o.classList.add('sel');p.classList.remove('sel');w.style.display='none';};
-  p.onclick=()=>{rec=false;p.classList.add('sel');o.classList.remove('sel');w.style.display='block';};
+    <div class="choice"><button id="c-obj" class="${(!ed||ed.recurrent)?'sel':''}">Récurrent</button>
+      <button id="c-pon" class="${(ed&&!ed.recurrent)?'sel':''}">Ponctuel · une date</button></div>
+    <div id="jwrap" style="display:${(!ed||ed.recurrent)?'block':'none'}">
+      <label>Quels jours</label>
+      <div class="days7">${JOURS.map((n,k)=>{
+        const on=ed&&ed.recurrent&&ed.days&&ed.days.length?ed.days.includes(k):true;
+        return `<button data-d="${k}" class="${on?'sel':''}">${n}</button>`;}).join('')}</div>
+      <div class="btnrow" style="margin-bottom:13px">
+        <button class="btn ghost" id="j-all">Tous les jours</button>
+        <button class="btn ghost" id="j-none">Aucun</button></div></div>
+    <div id="dwrap" style="display:${(ed&&!ed.recurrent)?'block':'none'}"><label>Date</label>
+      <input type="date" id="f-date" value="${ed&&ed.date?ed.date:iso(cursor)}"></div>
+    <div class="btnrow"><button class="btn" id="f-ok">${ed?'Enregistrer':'Créer'}</button>
+      <button class="btn ghost" id="f-no">Annuler</button></div>`);
+  let rec=ed?ed.recurrent:true;
+  let days=(ed&&ed.recurrent&&ed.days&&ed.days.length)?ed.days.slice():[0,1,2,3,4,5,6];
+  const o=document.getElementById('c-obj'),pn=document.getElementById('c-pon'),
+        jw=document.getElementById('jwrap'),dw=document.getElementById('dwrap');
+  o.onclick=()=>{rec=true;o.classList.add('sel');pn.classList.remove('sel');jw.style.display='block';dw.style.display='none';};
+  pn.onclick=()=>{rec=false;pn.classList.add('sel');o.classList.remove('sel');jw.style.display='none';dw.style.display='block';};
+  const paint=()=>document.querySelectorAll('#jwrap .days7 button').forEach(b=>
+    b.classList.toggle('sel',days.includes(+b.dataset.d)));
+  document.querySelectorAll('#jwrap .days7 button').forEach(b=>b.onclick=()=>{
+    const v=+b.dataset.d;days=days.includes(v)?days.filter(x=>x!==v):days.concat(v);paint();});
+  document.getElementById('j-all').onclick=()=>{days=[0,1,2,3,4,5,6];paint();};
+  document.getElementById('j-none').onclick=()=>{days=[];paint();};
+  document.querySelectorAll('.lib button').forEach(b=>b.onclick=()=>{
+    const x=lib[+b.dataset.lib];
+    document.getElementById('f-name').value=x.name;
+    document.getElementById('f-det').value=x.detail||'';
+    if(x.days&&x.days.length){days=x.days.slice();paint();}
+    toast('Repris de la bibliothèque');});
   document.getElementById('f-no').onclick=sheetClose;
   document.getElementById('f-ok').onclick=()=>{
-    const n=document.getElementById('f-name').value.trim();if(!n){toast('Il manque le nom');return;}
-    S.items.push({id:uid(),moment,type,name:n,detail:document.getElementById('f-det').value.trim(),
-      recurrent:rec,date:rec?null:document.getElementById('f-date').value,created:iso(cursor)});
-    save();sheetClose();renderMoment();renderHome();toast('Créé');};
+    const n=document.getElementById('f-name').value.trim();
+    if(!n){toast('Il manque le nom');return;}
+    if(rec&&!days.length){toast('Choisis au moins un jour');return;}
+    const det=document.getElementById('f-det').value.trim();
+    if(ed){
+      ed.name=n;ed.detail=det;ed.recurrent=rec;
+      ed.days=rec?days.slice():null;
+      ed.date=rec?null:document.getElementById('f-date').value;
+    }else{
+      S.items.push({id:uid(),moment,type,name:n,detail:det,recurrent:rec,
+        days:rec?days.slice():null,date:rec?null:document.getElementById('f-date').value,
+        created:iso(cursor),ord:nextOrd(moment,type),pauses:[]});
+    }
+    remember({name:n,detail:det,moment,type,recurrent:rec,days:rec?days.slice():null});
+    save();sheetClose();render();toast(ed?'Modifié':'Créé');};
   focusFirst();
+}
+function remember(x){
+  S.library=S.library||[];
+  const k=S.library.findIndex(y=>y.name===x.name&&y.type===x.type);
+  if(k>=0)S.library[k]=x;else S.library.push(x);
+  if(S.library.length>60)S.library=S.library.slice(-60);
+}
+function formPause(id){
+  const i=S.items.find(x=>x.id===id);if(!i)return;
+  sheetOpen(`<h3>Mettre en pause</h3>
+    <p style="color:var(--dim);font-size:14.5px;font-weight:300;margin:-10px 0 16px">
+    ${esc(i.name)} disparaît de tes journées sur la période, et ne compte plus dans les stats.
+    Elle revient toute seule à la date de reprise.</p>
+    <div class="two"><div><label>Du</label><input type="date" id="f-from" value="${iso(cursor)}"></div>
+      <div><label>Reprise le</label><input type="date" id="f-to"></div></div>
+    <p class="empty" style="margin-top:-4px">Laisse la reprise vide pour une pause sans date de fin.</p>
+    <div class="btnrow"><button class="btn" id="f-ok">Mettre en pause</button>
+      <button class="btn ghost" id="f-no">Annuler</button></div>`);
+  document.getElementById('f-no').onclick=sheetClose;
+  document.getElementById('f-ok').onclick=()=>{
+    const from=document.getElementById('f-from').value;if(!from){toast('Il manque la date');return;}
+    let to=document.getElementById('f-to').value||null;
+    if(to){const d=new Date(to);d.setDate(d.getDate()-1);to=iso(d);}
+    i.pauses=i.pauses||[];i.pauses.push({from,to});
+    save();sheetClose();render();toast('En pause');};
 }
 function formMeal(){
   sheetOpen(`<h3>Ajouter un aliment · ${MOMENTS[moment].t}</h3>
@@ -1456,7 +1598,7 @@ function advices(days,perf){
     `${actives} habits récurrentes en même temps. Au-delà de 5 ou 6, le taux de tenue s'effondre mécaniquement. Mets-en deux en pause : tu les reprendras quand les autres tiendront seules.`]);
   let grey=0,total=0;
   S.items.filter(i=>i.type!=='bad').forEach(i=>days.forEach(d=>{
-    const app=i.recurrent?i.created<=d:i.date===d;if(!app)return;total++;if(state(i.id,d)===0)grey++;}));
+    if(!applies(i,d))return;total++;if(state(i.id,d)===0)grey++;}));
   if(total&&grey/total>.3)a.push(["Tu ne tranches pas",
     `${Math.round(grey/total*100)} % des lignes restent en gris. Un gris, c'est une décision reportée : le soir, mets vert ou rouge, même si ça pique. C'est ce qui rend les chiffres utilisables.`]);
   const ec=ecartsWindow();
@@ -1495,13 +1637,13 @@ function reportDay(date){
       <div style="flex:1;min-width:210px"><div class="row"><span>Lignes tenues</span><b>${s.ok} / ${s.tot}</b></div>
       <div class="row"><span>Série en cours</span><b class="go">${streakDays()} jours</b></div>
       ${kc?`<div class="row"><span>Calories du jour</span><b>${kc} kcal</b></div>`:''}
-      <div class="row"><span>Note de la journée</span><b>${j.mood?j.mood+' / 5':'—'}</b></div></div></div>
+      <div class="row"><span>Note de la journée</span><b>${j.mood?j.mood+'. '+(MOODS.find(m=>m.v==j.mood)||{t:''}).t:'—'}</b></div></div></div>
     <div class="pan"><div class="mut" style="font-size:11px;letter-spacing:.18em;text-transform:uppercase">Sept derniers jours</div>
       <div style="margin-top:10px">${rbars(last7,260,54)}</div></div>`;
 
   ['matin','midi','soir'].forEach(m=>{
     const rows=[];
-    ['habit','todo'].forEach(ty=>S.items.filter(i=>i.moment===m&&i.type===ty&&(i.recurrent?i.created<=date:i.date===date))
+    ['habit','todo'].forEach(ty=>S.items.filter(i=>i.moment===m&&i.type===ty&&applies(i,date))
       .forEach(i=>{const st=state(i.id,date);
         rows.push(`<div class="row"><span>${esc(i.name)}</span>
           <b class="${st===1?'ok':st===2?'no':'mut'}">${st===1?'fait':st===2?'non fait':'en cours'}</b></div>`);}));
@@ -1511,12 +1653,13 @@ function reportDay(date){
     h+=`<h2>${MOMENTS[m].t}</h2><div class="pan">${rows.join('')}</div>`;
   });
 
-  const bad=S.items.filter(i=>i.type==='bad'&&(i.recurrent?i.created<=date:i.date===date));
+  const bad=S.items.filter(i=>i.type==='bad'&&applies(i,date));
   const ch=S.cheats[date]||[];
   if(bad.length||ch.length){
+    const tenu=bad.length&&bad.every(i=>isDone(i.id,date));
     h+=`<h2>Bad Habit</h2><div class="pan">`+
-      bad.map(i=>`<div class="row"><span>${esc(i.name)}</span>
-        <b class="${isDone(i.id,date)?'ok':'no'}">${isDone(i.id,date)?'tenu':'cédé'}</b></div>`).join('')+
+      (bad.length?`<div class="row"><span>Bad Habit</span>
+        <b class="${tenu?'ok':'no'}">${tenu?'Tenu':'Cédé'}</b></div>`:'')+
       ch.map(x=>`<div class="row"><span class="no">CHEAT · ${esc(x.label)}</span><b class="no">assumé</b></div>`).join('')+`</div>`;
   }
   if(j.good||j.bad){
@@ -1564,9 +1707,9 @@ function reportMonth(dd){
       ds.map(x=>`<div class="row"><span>${DOW[x.dow]}</span><b>${x.pct} %</b>
         </div><div class="bar"><i class="${x.pct>=80?'':x.pct>=50?'mid':'low'}" style="width:${x.pct}%"></i></div>`).join('')+`</div>`;
   }
-  ['habit','todo','bad'].forEach(ty=>{
+  ['habit','todo'].forEach(ty=>{
     const l=perf.filter(p=>p.i.type===ty);if(!l.length)return;
-    h+=`<h2>${ty==='habit'?'Habits':ty==='todo'?'Choses à faire':'Bad Habit'}</h2><div class="pan">`;
+    h+=`<h2>${ty==='habit'?'Habits':'Choses à faire'}</h2><div class="pan">`;
     l.forEach(p=>{
       const chips=days.map(d=>{const st=p.i.type==='bad'?(isDone(p.i.id,d)?1:2):state(p.i.id,d);
         const app=p.rel.includes(d);
@@ -1578,6 +1721,16 @@ function reportMonth(dd){
         <div class="chips">${chips}</div></div>`;});
     h+=`</div>`;
   });
+  {const bl=perf.filter(p=>p.i.type==='bad');
+   if(bl.length){
+    const jours=days.filter(d=>S.items.some(i=>i.type==='bad'&&applies(i,d)));
+    const tenus=jours.filter(d=>S.items.filter(i=>i.type==='bad'&&applies(i,d)).every(i=>isDone(i.id,d))).length;
+    const pc=jours.length?Math.round(tenus/jours.length*100):0;
+    h+=`<h2>Bad Habit</h2><div class="pan">
+      <div class="row"><span>Journées tenues</span><b class="${pc>=80?'ok':pc>=50?'go':'no'}">${tenus} / ${jours.length} · ${pc} %</b></div>
+      <div class="chips">${jours.map(d=>{
+        const t=S.items.filter(i=>i.type==='bad'&&applies(i,d)).every(i=>isDone(i.id,d));
+        return `<i class="sq ${t?'v':'r'}"></i>`;}).join('')}</div></div>`;}}
   if(ch){
     h+=`<h2>Cheats du mois</h2><div class="pan">`+
       days.map(k=>(S.cheats[k]||[]).map(x=>`<div class="row"><span>${esc(x.label)}</span><b class="mut">${k.slice(8)}/${k.slice(5,7)}</b></div>`).join('')).join('')+`</div>`;
@@ -1600,7 +1753,13 @@ function reportMonth(dd){
 
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='1.0';
+const VERSION='2.0';
+function lastExportLabel(){
+  if(!S.lastExport)return 'jamais';
+  const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
+  const q=`${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+  return j===0?"aujourd'hui":j===1?'hier · '+q:`il y a ${j} jours · ${q}`;
+}
 function renderSet(){
   const r=S.settings.rappels||{on:false,matin:'07:00',soir:'21:30'};
   const nb=S.items.length,ne=(S.evts||[]).length,nj=Object.keys(S.log||{}).length;
@@ -1620,11 +1779,14 @@ function renderSet(){
     <div class="kpis"><div class="pan"><div class="v">${nb}</div><div class="l">Lignes<br>suivies</div></div>
       <div class="pan"><div class="v">${nj}</div><div class="l">Jours<br>enregistrés</div></div>
       <div class="pan"><div class="v">${ne}</div><div class="l">Événements<br>agenda</div></div></div>
-    <button class="btn" id="expjson" style="width:100%">Exporter la sauvegarde</button>
+    <div class="mrow"><span>Dernière sauvegarde</span><span class="pct">${lastExportLabel()}</span></div>
+    <button class="btn" id="expjson" style="width:100%;margin-top:12px">Exporter la sauvegarde</button>
     <div class="btnrow"><button class="btn ghost" id="impbtn">Restaurer un fichier</button>
       <button class="btn ghost" id="sharejson">Partager la sauvegarde</button></div>
     <input type="file" id="impfile" accept=".json,application/json" style="display:none">
-    <p class="empty" style="margin-top:10px">La restauration remplace intégralement les données de cet appareil.</p></div>
+    <p class="empty" style="margin-top:10px">Le fichier s'appelle <b>SurH40-sauvegarde-${stamp()}.json</b> et se range dans tes Téléchargements.
+      Les anciennes sauvegardes sont conservées : pense à faire le ménage de temps en temps.
+      La restauration remplace intégralement les données de cet appareil.</p></div>
 
   <div class="block"><h3>Installation</h3>
     <div class="empty">Android : menu du navigateur → « Ajouter à l'écran d'accueil ».<br>
@@ -1632,6 +1794,11 @@ function renderSet(){
       PC : l'icône d'installation apparaît à droite de la barre d'adresse.</div>
     <div class="mrow"><span>Version</span><span class="pct">SurH40 ${VERSION}</span></div>
     <div class="mrow"><span>Mode hors ligne</span><span class="pct">${('serviceWorker' in navigator)?'disponible':'non supporté'}</span></div></div>
+
+  <div class="block"><h3>Repartir à zéro</h3>
+    <div class="empty">Efface tout l'historique — cases cochées, cheats, bilans, repas, dettes — et remet les compteurs à zéro.
+      Tes habits, ton agenda, tes objectifs et tes outils sont conservés. Exporte une sauvegarde avant, par sécurité.</div>
+    <button class="add" data-reset="1" style="border-color:rgba(201,162,39,.45);color:var(--or)">Remettre les stats à zéro</button></div>
 
   <div class="block bad"><h3>Zone rouge</h3>
     <button class="add" data-wipe="1" style="border-color:rgba(169,59,39,.4);color:var(--rouge)">Tout effacer et repartir de zéro</button></div>`;
@@ -1662,9 +1829,14 @@ function renderSet(){
     }catch(err){toast('Fichier illisible');}};
     rd.readAsText(f);};
 }
+function stamp(){
+  const d=new Date(),z=n=>String(n).padStart(2,'0');
+  return z(d.getDate())+z(d.getMonth()+1)+d.getFullYear();
+}
 function exportData(share){
   const payload=JSON.stringify(Object.assign({_app:'SurH40',_v:VERSION,_date:new Date().toISOString()},S),null,1);
-  const name=`surh40-sauvegarde-${today()}.json`;
+  const name=`SurH40-sauvegarde-${stamp()}.json`;
+  S.lastExport=new Date().toISOString();save();
   if(share){
     try{const file=new File([payload],name,{type:'application/json'});
       if(navigator.canShare&&navigator.canShare({files:[file]}))
@@ -1707,8 +1879,15 @@ function planRappels(){
 }
 
 /* ================= ROUTAGE ================= */
-function go(v,mom){
+function parentView(v){return v==='detail'?'stat':'home';}
+function goBack(){
+  if(document.getElementById('sheet').classList.contains('on')){sheetClose();return true;}
+  if(view==='home')return false;
+  go(parentView(view));return true;
+}
+function go(v,mom,push){
   view=v;if(mom){moment=mom;badOpen=false;}
+  if(push!==false){try{history.pushState({v,mom:moment},'');}catch(e){}}
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   document.getElementById({home:'s-home',moment:'s-moment',week:'s-week',month:'s-month',
     week:'s-cal',month:'s-cal',cal:'s-cal',stat:'s-stat',detail:'s-detail',goals:'s-goals',tools:'s-tools',set:'s-set'}[v]).classList.add('on');
@@ -1732,10 +1911,17 @@ document.addEventListener('click',e=>{
   if(d.go)return go(d.go);
   if(d.tog){cycle(d.tog,iso(cursor));renderMoment();renderHome();return;}
   if(d.togbad){toggleBad(d.togbad,iso(cursor));checkDebt();renderMoment();renderHome();return;}
-  if(d.det){const el=document.getElementById('det-'+d.det);if(el)el.classList.toggle('open');return;}
-  if(d.del){if(confirm('Supprimer cette ligne et tout son historique ?')){
+  if(d.det){if(openDet.has(d.det))openDet.delete(d.det);else openDet.add(d.det);
+    const el=document.getElementById('det-'+d.det);if(el)el.classList.toggle('open');return;}
+  if(d.del){if(confirm('Supprimer cette ligne et tout son historique ?')){openDet.delete(d.del);
     S.items=S.items.filter(i=>i.id!==d.del);save();renderMoment();renderHome();}return;}
   if(d.add)return d.add==='meal'?formMeal():formItem(d.add);
+  if(d.edit)return formItem(null,d.edit);
+  if(d.pause)return formPause(d.pause);
+  if(d.unpause){const[id,k]=d.unpause.split('|');const it=S.items.find(x=>x.id===id);
+    if(it){it.pauses.splice(+k,1);save();render();toast('Reprise');}return;}
+  if(d.up){moveItem(d.up,-1);render();return;}
+  if(d.down){moveItem(d.down,1);render();return;}
   if(d.cheat)return formCheat();
   if(d.delcheat!==undefined){S.cheats[iso(cursor)].splice(+d.delcheat,1);save();renderMoment();return;}
   if(d.delmeal!==undefined){S.meals[iso(cursor)+'|'+moment].splice(+d.delmeal,1);save();renderMoment();return;}
@@ -1756,6 +1942,12 @@ document.addEventListener('click',e=>{
   if(d.delent){const[k,i]=d.delent.split('|');
     if(confirm('Supprimer cette entrée ?')){S.tools[k].splice(+i,1);save();renderTools();}return;}
   if(d.niv){S.settings.seuilJour=+d.niv;save();render();toast('Palier '+niveauNom(+d.niv));return;}
+  if(d.reset){
+    if(confirm("Remettre les statistiques à zéro ? L'historique sera effacé, tes habits seront conservées.")){
+      S.log={};S.cheats={};S.journal={};S.meals={};S.debts=[];S.baseline=0;
+      (S.rewards||[]).forEach(r=>r.claimed=false);
+      save();render();toast('Compteurs remis à zéro');}
+    return;}
   if(d.wipe){if(confirm('Effacer définitivement toutes tes données ?')&&confirm('Vraiment ? Cette action est irréversible.')){
     S=JSON.parse(JSON.stringify(BLANK));save();render();toast('Tout a été effacé');}return;}
   if(d.addg)return formGobj();
@@ -1771,6 +1963,31 @@ document.addEventListener('click',e=>{
   if(d.paydebt){const dd=S.debts.find(x=>x.id===d.paydebt);if(dd){dd.done=true;dd.doneDate=today();
     S.baseline=ecartsWindow();save();render();toast('Dette réglée');}return;}
 });
+/* ---- retour : geste de balayage + bouton physique ---- */
+window.addEventListener('popstate',e=>{
+  const st=e.state;
+  if(st&&st.v)go(st.v,st.mom,false);
+  else if(view!=='home')go('home',null,false);
+});
+(function(){
+  let x0=null,y0=null,t0=0,lock=false;
+  const NOSWIPE='.heat,.heatgrid,textarea,input,select,.grid,.chips,.chips2';
+  document.addEventListener('touchstart',e=>{
+    if(e.touches.length!==1){x0=null;return;}
+    const t=e.touches[0];
+    lock=!!(e.target.closest&&e.target.closest(NOSWIPE));
+    x0=t.clientX;y0=t.clientY;t0=Date.now();
+  },{passive:true});
+  document.addEventListener('touchend',e=>{
+    if(x0===null||lock)return;
+    const t=e.changedTouches[0];
+    const dx=t.clientX-x0,dy=t.clientY-y0,dt=Date.now()-t0;
+    x0=null;
+    if(dx>70&&Math.abs(dx)>Math.abs(dy)*2&&dt<700){
+      if(goBack())navigator.vibrate&&navigator.vibrate(8);
+    }
+  },{passive:true});
+})();
 document.getElementById('prev').onclick=()=>{cursor.setDate(cursor.getDate()-1);render();};
 document.getElementById('next').onclick=()=>{cursor.setDate(cursor.getDate()+1);render();};
 document.getElementById('mprev').onclick=()=>{monthCursor.setMonth(monthCursor.getMonth()-1);renderMonth();};
@@ -1789,6 +2006,7 @@ document.getElementById('send-month').onclick=()=>{SEND=true;reportMonth(cursor)
   if(saved)S=Object.assign(JSON.parse(JSON.stringify(BLANK)),saved,
     {settings:Object.assign({window:15,seuil:3,delai:5,seuilJour:70,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
   render();planRappels();
+  try{history.replaceState({v:'home'},'');}catch(e){}
   if('serviceWorker' in navigator&&location.protocol!=='file:')
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();planRappels();}});
