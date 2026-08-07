@@ -346,6 +346,12 @@ span.chip{cursor:default}
 .famrow:hover{border-color:rgba(201,162,39,.35)}
 .famrow.bad{cursor:default;border-color:rgba(169,59,39,.28)}
 .famrow.bad .n{color:var(--rouge)}
+.mom{display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;
+  border-radius:4px;font-family:'Barlow Condensed',sans-serif;font-size:10.5px;font-style:normal;
+  letter-spacing:0;margin-right:8px;vertical-align:1px;flex:none}
+.mom-matin{background:rgba(201,162,39,.18);color:var(--or)}
+.mom-midi{background:rgba(186,190,196,.16);color:#BABEC4}
+.mom-soir{background:rgba(120,130,190,.18);color:#8E99D6}
 .strip{display:flex;gap:2px;margin-top:9px;flex-wrap:nowrap;overflow:hidden}
 .strip .sq{width:8px;height:8px;border-radius:1.5px;flex:none}
 
@@ -1164,8 +1170,9 @@ function monthDays(){
 function famLine(i,mdays,days){
   const pf=itemPerf(i,days);
   const pc=pf?pf.pct:null;
+  const MOM={matin:'M',midi:'J',soir:'S'};
   return `<button class="famrow" data-stat="${i.id}">
-    <div class="statline"><span class="n">${esc(i.name)}</span>
+    <div class="statline"><span class="n"><i class="mom mom-${i.moment}">${MOM[i.moment]}</i>${esc(i.name)}</span>
       <span class="pct">${pc===null?'pas encore de données':`${pc}% · ${pf.done}/${pf.rel.length}`} ›</span></div>
     ${strip(i,mdays)}<div class="stripm">${MON[new Date().getMonth()].toLowerCase()}</div></button>`;
 }
@@ -1175,7 +1182,7 @@ function badLine(bads,mdays,days){
   const tenus=jours.filter(d=>bads.filter(i=>applies(i,d)).every(i=>isDone(i.id,d))).length;
   const pc=jours.length?Math.round(tenus/jours.length*100):null;
   return `<div class="famrow bad">
-    <div class="statline"><span class="n">Bad Habit</span>
+    <div class="statline"><span class="n"><i class="mom mom-soir">S</i>Bad Habit</span>
       <span class="pct">${pc===null?'pas encore de données':`${pc}% · ${tenus}/${jours.length}`}</span></div>
     <div class="strip">`+dd.map(d=>{
       const act=bads.filter(i=>applies(i,d));
@@ -1971,7 +1978,7 @@ function reportMonth(dd){
 
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='3.5';
+const VERSION='3.6';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
