@@ -265,11 +265,13 @@ label{display:block;font-family:'Barlow Condensed',sans-serif;text-transform:upp
   letter-spacing:.22em;font-size:11.5px;color:var(--or);display:flex;align-items:center;gap:11px}
 .slot h4::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--trait),transparent)}
 .chips2{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:11px}
-.chip{display:inline-flex;align-items:center;gap:5px;border:1px solid var(--trait);border-radius:20px;
+.chip{border:0;font:inherit;cursor:pointer;display:inline-flex;align-items:center;gap:5px;border:1px solid var(--trait);border-radius:20px;
   padding:4px 11px;font-size:12.5px;font-weight:300;color:var(--dim);background:rgba(0,0,0,.2)}
 .chip i{width:6px;height:6px;border-radius:50%;flex:none;background:var(--trait)}
 .chip.v i{background:var(--vert)}.chip.r i{background:var(--rouge)}
 .chip.v{color:var(--marbre)}
+.chip:hover{border-color:var(--or)}
+span.chip{cursor:default}
 .tl{display:flex;gap:12px;padding:11px 13px;border-radius:var(--r);margin-bottom:6px;
   border-left:2px solid var(--or);cursor:pointer;width:100%;text-align:left;color:var(--marbre);font:inherit}
 .tl .h{font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:.08em;color:var(--or);
@@ -327,6 +329,18 @@ label{display:block;font-family:'Barlow Condensed',sans-serif;text-transform:upp
 .verdict h4{margin:0 0 10px;font-family:'Barlow Condensed',sans-serif;letter-spacing:.22em;
   text-transform:uppercase;font-size:11px;color:var(--or)}
 .verdict p{margin:0 0 7px;font-size:15px;font-weight:300}
+.fam{padding:16px;margin-bottom:10px}
+.famhead{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.famdon{flex:none}
+.famnom{font-family:'Cinzel',serif;font-size:17px;letter-spacing:.08em;font-weight:500}
+.famrow{display:block;width:100%;text-align:left;background:rgba(0,0,0,.22);border:1px solid var(--trait);
+  border-radius:var(--r);padding:11px 13px;margin-bottom:7px;color:var(--marbre);font:inherit;cursor:pointer}
+.famrow:hover{border-color:rgba(201,162,39,.35)}
+.famrow.bad{cursor:default;border-color:rgba(169,59,39,.28)}
+.famrow.bad .n{color:var(--rouge)}
+.strip{display:flex;gap:2px;margin-top:9px;flex-wrap:nowrap;overflow:hidden}
+.strip .sq{width:8px;height:8px;border-radius:1.5px;flex:none}
+.sq.p{background:repeating-linear-gradient(45deg,rgba(201,162,39,.55) 0 3px,rgba(201,162,39,.2) 3px 6px)}
 .stat{padding:14px 15px;margin-bottom:7px;cursor:pointer;width:100%;text-align:left;
   color:var(--marbre);font:inherit;display:block}
 .stat:hover{border-color:rgba(201,162,39,.3)}
@@ -344,6 +358,8 @@ label{display:block;font-family:'Barlow Condensed',sans-serif;text-transform:upp
 .heat{overflow-x:auto;padding:16px;margin-bottom:14px}
 .heatgrid{display:flex;gap:3px}
 .heatcol{display:flex;flex-direction:column;gap:3px}
+.heatgrid .sq{width:13px;height:13px;border-radius:2px;background:rgba(255,255,255,.045)}
+.legend .sq{width:13px;height:13px;border-radius:2px;background:rgba(255,255,255,.045)}
 .sq{width:13px;height:13px;border-radius:2px;background:rgba(255,255,255,.045)}
 .sq.v{background:linear-gradient(160deg,var(--vert),#4E6B3B)}
 .sq.r{background:linear-gradient(160deg,var(--rouge),#6E2417)}
@@ -519,7 +535,7 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,seuilJour:70,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,seuilJour:70,statsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
@@ -604,9 +620,21 @@ function shift(date,n){const d=new Date(date);d.setDate(d.getDate()+n);return is
 function lastDays(n){const a=[];for(let k=n-1;k>=0;k--)a.push(shift(new Date(),-k));return a;}
 
 /* ================= LOGIQUE ================= */
+function inGPause(date){
+  return (S.gpauses||[]).some(p=>date>=p.from&&(!p.to||date<=p.to));
+}
 function inPause(i,date){
+  if(inGPause(date))return true;
   return (i.pauses||[]).some(p=>date>=p.from&&(!p.to||date<=p.to));
 }
+/* la ligne existait-elle ce jour-là, pause mise à part ? */
+function existed(i,date){
+  if(!i.recurrent)return i.date===date;
+  if(i.created>date)return false;
+  const dw=new Date(date).getDay();
+  return !i.days||!i.days.length||i.days.includes(dw);
+}
+function paused(i,date){return existed(i,date)&&inPause(i,date);}
 function applies(i,date){
   if(inPause(i,date))return false;
   if(!i.recurrent)return i.date===date;
@@ -634,8 +662,46 @@ function moveItem(id,dir){
 const JOURS=['di','lu','ma','me','je','ve','sa'];
 function freqLabel(i){
   if(!i.recurrent)return 'ponctuel';
-  if(!i.days||i.days.length===7||!i.days.length)return 'OBJ40';
+  if(!i.days||i.days.length===7||!i.days.length)return i.type==='bad'?'AVANT 40':'OBJ40';
   return i.days.slice().sort().map(d=>JOURS[d]).join(' ');
+}
+/* ---- familles ---- */
+function famName(id){const f=(S.families||[]).find(x=>x.id===id);return f?f.name:null;}
+function famOf(i){return famName(i.fam)||'Sans famille';}
+function famList(){
+  const l=(S.families||[]).map(f=>({id:f.id,name:f.name}));
+  if(S.items.some(i=>!i.fam||!famName(i.fam)))l.push({id:null,name:'Sans famille'});
+  return l;
+}
+function addFamily(name){
+  S.families=S.families||[];
+  const ex=S.families.find(f=>f.name.toLowerCase()===name.toLowerCase());
+  if(ex)return ex.id;
+  const f={id:uid(),name};S.families.push(f);return f.id;
+}
+/* ---- séries : record historique conservé ---- */
+function firstDay(){
+  const ks=Object.keys(S.log||{}).sort();
+  return ks.length?ks[0]:today();
+}
+function bestStreak(){
+  const S0=seuilJ();let best=0,cur=0;
+  let d=firstDay();
+  while(d<=today()){
+    const sc=dayScore(d);
+    if(sc.tot&&sc.pct>=S0){cur++;best=Math.max(best,cur);}
+    else if(sc.tot)cur=0;
+    else cur=0;
+    d=shift(new Date(d),1);
+  }
+  return Math.max(best,streakDays());
+}
+/* ---- période statistique ---- */
+function statDays(n){
+  let l=lastDays(n);
+  const from=S.settings.statsFrom;
+  if(from)l=l.filter(d=>d>=from);
+  return l;
 }
 /* état : 0 = en cours (gris), 1 = OK (vert), 2 = NOK (rouge) */
 const state=(id,date)=>(S.log[date]&&S.log[date][id])||0;
@@ -871,7 +937,7 @@ function renderDay(){
     const chips=[];
     ['habit','todo'].forEach(t=>itemsFor(m,t,date).forEach(i=>{
       const st=state(i.id,date);
-      chips.push(`<span class="chip ${st===1?'v':st===2?'r':''}"><i></i>${esc(i.name)}</span>`);}));
+      chips.push(`<button class="chip ${st===1?'v':st===2?'r':''}" data-tog="${i.id}"><i></i>${esc(i.name)}</button>`);}));
     if(m==='soir'&&itemsFor('soir','bad',date).length){
       const all=itemsFor('soir','bad',date).every(i=>isDone(i.id,date));
       chips.push(`<span class="chip ${all?'v':'r'}"><i></i>Bad Habit</span>`);}
@@ -975,67 +1041,86 @@ function itemPerf(i,days){
   return {rel,done,pct:Math.round(done/rel.length*100)};
 }
 function renderStat(){
-  const days=lastDays(30);
-  let tot=0,ok=0;days.forEach(d=>{const s=dayScore(d);tot+=s.tot;ok+=s.ok;});
+  const days=statDays(30);
+  let tot=0,ok=0;days.forEach(d=>{const sc=dayScore(d);tot+=sc.tot;ok+=sc.ok;});
   const glob=tot?Math.round(ok/tot*100):0;
   const ec=ecartsWindow();
   const cheats30=days.reduce((a,d)=>a+((S.cheats[d]||[]).length),0);
+  const pausedDays=days.filter(d=>inGPause(d)).length;
 
   let h=`<div class="donutwrap pan"><div class="donut">${donut(glob,116)}
-      <div class="lbl"><b>${glob}%</b><span>30 jours</span></div></div>
-    <div class="txt"><p><b>${ok}</b> cases validées sur <b>${tot}</b> tranchées, ces 30 derniers jours.</p>
-    <p style="color:var(--dim)">C'est ça, le global : le rapport entre ce que tu as décidé de faire et ce que tu as fait.</p></div></div>`;
+      <div class="lbl"><b>${glob}%</b><span>${days.length} jours</span></div></div>
+    <div class="txt"><p><b>${ok}</b> cases validées sur <b>${tot}</b> tranchées.</p>
+    <p style="color:var(--dim)">${S.settings.statsFrom?`Comptage depuis le ${S.settings.statsFrom}.`:"Le rapport entre ce que tu as décidé de faire et ce que tu as fait."}</p>
+    ${pausedDays?`<p style="color:var(--or)">${pausedDays} jour${pausedDays>1?'s':''} en pause sur la période.</p>`:''}</div></div>`;
 
   h+=`<div class="kpis"><div class="pan"><div class="v">${streakDays()}</div><div class="l">Série ${seuilJ()}%<br>${niveauNom(seuilJ())}</div></div>
-    <div class="pan"><div class="v">${S.items.filter(i=>i.recurrent).length}</div><div class="l">OBJ40<br>actifs</div></div>
+    <div class="pan"><div class="v">${bestStreak()}</div><div class="l">Record<br>historique</div></div>
     <div class="pan"><div class="v">${gobjYear()}</div><div class="l">Objectifs<br>réalisés</div></div>
     <div class="pan"><div class="v">${worstDow(days)}</div><div class="l">Jour<br>faible</div></div></div>`;
 
-  const perf=[];
-  S.items.forEach(i=>{const p=itemPerf(i,days);if(p)perf.push({i,...p});});
-  perf.sort((a,b)=>b.pct-a.pct);
-  const open=perf.filter(p=>p.i.type!=='bad');
-  if(open.length>=2){
-    h+=`<div class="verdict pan"><h4>Le verdict</h4>
-      <p style="color:var(--vert)">Ce qui tient : ${open.slice(0,2).map(p=>esc(p.i.name)).join(', ')}.</p>
-      <p style="color:var(--rouge)">Ce qui lâche : ${open.slice(-2).reverse().map(p=>esc(p.i.name)).join(', ')}.</p>
-      <p style="color:var(--dim);font-size:14px">Ne travaille qu'une ligne rouge à la fois. C'est plus lent, ça tient plus longtemps.</p></div>`;
+  /* ---- regroupement par famille ---- */
+  const fams=famList();
+  const scored=fams.map(f=>{
+    const items=S.items.filter(i=>(i.fam||null)===f.id||(f.id===null&&!famName(i.fam)));
+    let t=0,o=0;
+    items.forEach(i=>{const pf=itemPerf(i,days);if(pf){t+=pf.rel.length;o+=pf.done;}});
+    return {f,items,t,o,pct:t?Math.round(o/t*100):null};
+  }).filter(x=>x.items.length);
+
+  if(!scored.length){
+    h+=`<div class="empty">Rien à mesurer encore. Crée une habit, reviens dans une semaine.</div>`;
+    document.getElementById('stat').innerHTML=h;return;
   }
-  ['habit','todo'].forEach(ty=>{
-    const l=open.filter(p=>p.i.type===ty);if(!l.length)return;
-    h+=`<div class="block"><h3>${ty==='habit'?'Habits':'Choses à faire'}</h3>`;
-    l.forEach(p=>h+=statRow(p));
+  const rank=scored.filter(x=>x.pct!==null).sort((a,b)=>b.pct-a.pct);
+  if(rank.length>=2){
+    h+=`<div class="verdict pan"><h4>Le verdict</h4>
+      <p style="color:var(--vert)">Axe le plus solide : ${esc(rank[0].f.name)} · ${rank[0].pct} %.</p>
+      <p style="color:var(--rouge)">Axe le plus faible : ${esc(rank[rank.length-1].f.name)} · ${rank[rank.length-1].pct} %.</p>
+      <p style="color:var(--dim);font-size:14px">Travaille une seule famille à la fois. C'est plus lent, ça tient plus longtemps.</p></div>`;
+  }
+
+  scored.forEach(x=>{
+    const c=x.pct===null?'':x.pct>=80?'':x.pct>=50?'mid':'low';
+    h+=`<div class="fam pan"><div class="famhead">
+      <div class="famdon">${donut(x.pct??0,58)}</div>
+      <div style="flex:1"><div class="famnom">${esc(x.f.name)}</div>
+        <div class="sub">${x.pct===null?'pas encore de données':`${x.o}/${x.t} · ${x.pct} %`}</div>
+        <div class="bar"><i class="${c}" style="width:${x.pct||0}%"></i></div></div></div>`;
+    const bads=x.items.filter(i=>i.type==='bad');
+    x.items.filter(i=>i.type!=='bad').forEach(i=>h+=famLine(i,days));
+    if(bads.length)h+=badLine(bads,days);
     h+=`</div>`;
   });
-
-  /* section Bad Habit repliée, comme le soir */
-  const bl=perf.filter(p=>p.i.type==='bad');
-  h+=`<div class="block bad"><h3>Bad Habit</h3>`;
-  if(!badStatOpen){
-    h+=`<div class="pan locked"><p>Section refermée. ${bl.length?bl.length+' ligne(s) suivie(s).':'Rien de suivi.'}</p>
-        <button class="btn ghost" id="openbadstat">Ouvrir les stats Bad Habit</button></div>`;
-  }else{
-    h+=`<div class="badbar"><button id="closebadstat">Refermer</button></div>`;
-    h+=`<div class="kpis"><div class="pan"><div class="v">${cheats30}</div><div class="l">Cheats<br>30 j</div></div>
-      <div class="pan"><div class="v">${ec}</div><div class="l">Écarts<br>${S.settings.window} j</div></div>
-      <div class="pan"><div class="v">${S.settings.seuil}</div><div class="l">Seuil<br>punition</div></div></div>`;
-    if(!bl.length)h+=`<div class="empty">Aucune ligne Bad Habit créée.</div>`;
-    bl.forEach(p=>h+=statRow(p));
-  }
-  h+=`</div>`;
-
-  if(!perf.length)h+=`<div class="empty">Rien à mesurer encore. Crée une habit, reviens dans une semaine.</div>`;
   document.getElementById('stat').innerHTML=h;
-  const o=document.getElementById('openbadstat'),c=document.getElementById('closebadstat');
-  if(o)o.onclick=()=>{badStatOpen=true;renderStat();};
-  if(c)c.onclick=()=>{badStatOpen=false;renderStat();};
 }
-function statRow(p){
-  const c=p.pct>=80?'':p.pct>=50?'mid':'low';
-  return `<button class="stat pan" data-stat="${p.i.id}">
-    <div class="statline"><span class="n">${esc(p.i.name)}</span><span class="pct">${p.pct}% · ${p.done}/${p.rel.length} ›</span></div>
-    <div class="sub">${MOMENTS[p.i.moment].t} · ${p.i.recurrent?'OBJ40':'ponctuel'}</div>
-    <div class="bar"><i class="${c}" style="width:${p.pct}%"></i></div></button>`;
+function strip(i,days){
+  return `<div class="strip">`+days.map(d=>{
+    if(paused(i,d))return `<i class="sq p"></i>`;
+    if(!applies(i,d))return `<i class="sq"></i>`;
+    const st=i.type==='bad'?(isDone(i.id,d)?1:2):state(i.id,d);
+    return `<i class="sq ${st===1?'v':st===2?'r':''}"></i>`;}).join('')+`</div>`;
+}
+function famLine(i,days){
+  const pf=itemPerf(i,days);
+  const pc=pf?pf.pct:null;
+  return `<button class="famrow" data-stat="${i.id}">
+    <div class="statline"><span class="n">${esc(i.name)}</span>
+      <span class="pct">${pc===null?'pas encore de données':`${pc}% · ${pf.done}/${pf.rel.length}`} ›</span></div>
+    ${strip(i,days)}</button>`;
+}
+function badLine(bads,days){
+  const jours=days.filter(d=>bads.some(i=>applies(i,d)));
+  const tenus=jours.filter(d=>bads.filter(i=>applies(i,d)).every(i=>isDone(i.id,d))).length;
+  const pc=jours.length?Math.round(tenus/jours.length*100):null;
+  return `<div class="famrow bad">
+    <div class="statline"><span class="n">Bad Habit</span>
+      <span class="pct">${pc===null?'pas encore de données':`${pc}% · ${tenus}/${jours.length}`}</span></div>
+    <div class="strip">`+days.map(d=>{
+      const act=bads.filter(i=>applies(i,d));
+      if(bads.some(i=>paused(i,d))&&!act.length)return `<i class="sq p"></i>`;
+      if(!act.length)return `<i class="sq"></i>`;
+      return `<i class="sq ${act.every(i=>isDone(i.id,d))?'v':'r'}"></i>`;}).join('')+`</div></div>`;
 }
 function dowStats(days){
   const acc=[0,1,2,3,4,5,6].map(()=>({t:0,o:0}));
@@ -1048,61 +1133,78 @@ function bestDow(days){const l=dowStats(days).filter(x=>x.pct!==null);
 function worstDow(days){const l=dowStats(days).filter(x=>x.pct!==null);
   if(!l.length)return '—';l.sort((a,b)=>a.pct-b.pct);return DOW[l[0].dow];}
 
-/* détail d'une ligne : heatmap 3 mois */
+/* détail d'une ligne : heatmap navigable par blocs de 3 mois */
+let heatOff=0;
 function renderDetail(){
   const i=S.items.find(x=>x.id===detailId);
   if(!i){document.getElementById('detail').innerHTML='<div class="empty">Ligne introuvable.</div>';return;}
-  const days=lastDays(91);
-  const p=itemPerf(i,days)||{rel:[],done:0,pct:0};
 
-  /* colonnes = semaines (lundi -> dimanche) */
-  const start=new Date();start.setDate(start.getDate()-90);
+  /* fenêtre de 13 semaines décalée de heatOff blocs */
+  const end=new Date();end.setDate(end.getDate()+heatOff*91);
+  const start=new Date(end);start.setDate(start.getDate()-90);
   start.setDate(start.getDate()-((start.getDay()+6)%7));
-  const cols=[],labels=[];let last=-1;
+  const days=[];{let d=new Date(start);
+    while(iso(d)<=iso(end)){days.push(iso(d));d.setDate(d.getDate()+1);}}
+
+  const rel=days.filter(d=>applies(i,d)&&d<=today());
+  const done=rel.filter(d=>isDone(i.id,d)).length;
+  const pct=rel.length?Math.round(done/rel.length*100):0;
+  const nbPause=days.filter(d=>paused(i,d)&&d<=today()).length;
+
+  const cols=[];
   for(let w=0;w<14;w++){
-    const col=[];let labSet=false;
-    for(let d=0;d<7;d++){
-      const dt=new Date(start);dt.setDate(start.getDate()+w*7+d);
+    const col=[];
+    for(let k=0;k<7;k++){
+      const dt=new Date(start);dt.setDate(start.getDate()+w*7+k);
       const key=iso(dt);
-      if(!labSet){if(dt.getMonth()!==last&&dt.getDate()<=7){labels.push(MSHORT[dt.getMonth()]);last=dt.getMonth();}
-        else labels.push('');labSet=true;}
-      if(key>today()||!p.rel.includes(key))col.push('');
+      if(key>today())col.push('');
+      else if(paused(i,key))col.push('p');
+      else if(!applies(i,key))col.push('');
       else col.push(isDone(i.id,key)?'v':'r');
     }
     cols.push(col);
   }
-  const applicable=p.rel.length;
-  /* par mois */
+  let best=0,cur=0;
+  rel.slice().sort().forEach(d=>{if(isDone(i.id,d)){cur++;best=Math.max(best,cur);}else cur=0;});
+
   const months=[];
   for(let k=2;k>=0;k--){
-    const d=new Date();d.setDate(1);d.setMonth(d.getMonth()-k);
-    const y=d.getFullYear(),m=d.getMonth(),lastD=new Date(y,m+1,0).getDate();
-    const ds=[];for(let j=1;j<=lastD;j++){const key=iso(new Date(y,m,j));if(key<=today())ds.push(key);}
-    const rel=ds.filter(x=>p.rel.includes(x));
-    months.push({n:MON[m],pct:rel.length?Math.round(rel.filter(x=>isDone(i.id,x)).length/rel.length*100):null,
-      d:rel.filter(x=>isDone(i.id,x)).length,t:rel.length});
+    const d=new Date(end);d.setDate(1);d.setMonth(d.getMonth()-k);
+    const y=d.getFullYear(),m=d.getMonth(),last=new Date(y,m+1,0).getDate();
+    const ds=[];for(let j=1;j<=last;j++){const key=iso(new Date(y,m,j));if(key<=today())ds.push(key);}
+    const r=ds.filter(x=>applies(i,x));
+    const pz=ds.filter(x=>paused(i,x)).length;
+    months.push({n:MON[m],y,pct:r.length?Math.round(r.filter(x=>isDone(i.id,x)).length/r.length*100):null,
+      d:r.filter(x=>isDone(i.id,x)).length,t:r.length,pz});
   }
-  /* meilleure série */
-  let best=0,cur=0;
-  p.rel.slice().sort().forEach(d=>{if(isDone(i.id,d)){cur++;best=Math.max(best,cur);}else cur=0;});
-
   const bad=i.type==='bad';
+  const per=`${MSHORT[start.getMonth()]} ${start.getFullYear()} → ${MSHORT[end.getMonth()]} ${end.getFullYear()}`;
+
   let h=`<h2 class="title">${esc(i.name)}</h2>
-    <p class="tagline">${MOMENTS[i.moment].t} · ${bad?'bilan privé':i.type==='todo'?'chose à faire':'habit'} · ${i.recurrent?'OBJ40':'ponctuel'}</p>
-    <div class="donutwrap pan"><div class="donut">${donut(p.pct,116)}
-      <div class="lbl"><b>${p.pct}%</b><span>91 jours</span></div></div>
-      <div class="txt"><p><b>${p.done}</b> validés sur <b>${applicable}</b> jours concernés.</p>
-      <p style="color:var(--dim)">Meilleure série : <b style="color:var(--or)">${best} jours</b>.</p></div></div>
-    <div class="heat pan"><div class="heatlab">${labels.filter((_,idx)=>idx%7===0).map(()=>'').join('')}</div>
-      <div class="heatgrid">${cols.map((c,ci)=>`<div class="heatcol">${c.map(v=>`<i class="sq ${v}"></i>`).join('')}</div>`).join('')}</div>
+    <p class="tagline">${famOf(i)} · ${MOMENTS[i.moment].t} · ${bad?'bad habit':i.type==='todo'?'chose à faire':'habit'} · ${freqLabel(i)}</p>
+    <div class="donutwrap pan"><div class="donut">${donut(pct,116)}
+      <div class="lbl"><b>${pct}%</b><span>période</span></div></div>
+      <div class="txt"><p><b>${done}</b> validés sur <b>${rel.length}</b> jours concernés.</p>
+      <p style="color:var(--dim)">Meilleure série : <b style="color:var(--or)">${best} jours</b>.</p>
+      ${nbPause?`<p style="color:var(--or)">${nbPause} jour${nbPause>1?'s':''} en pause.</p>`:''}</div></div>
+    <div class="mhead"><button class="btn ghost" id="hprev">‹</button>
+      <div class="m" style="font-size:14px">${per}</div>
+      <button class="btn ghost" id="hnext" ${heatOff>=0?'disabled style="opacity:.35"':''}>›</button></div>
+    ${heatOff!==0?`<button class="btn ghost" id="hnow" style="width:100%;margin-bottom:14px">Revenir à aujourd'hui</button>`:''}
+    <div class="heat pan">
+      <div class="heatgrid">${cols.map(c=>`<div class="heatcol">${c.map(v=>`<i class="sq ${v}"></i>`).join('')}</div>`).join('')}</div>
       <div class="heatlab" style="margin:7px 0 0">${cols.map((_,ci)=>{
         const dt=new Date(start);dt.setDate(start.getDate()+ci*7);
         return `<span style="width:13px">${dt.getDate()<=7?MSHORT[dt.getMonth()]:''}</span>`;}).join('')}</div>
-      <div class="legend"><i class="sq v"></i> ${bad?'tenu':'fait'} <i class="sq r"></i> ${bad?'cédé':'raté'} <i class="sq"></i> non concerné</div></div>
+      <div class="legend"><i class="sq v"></i> ${bad?'tenu':'fait'} <i class="sq r"></i> ${bad?'cédé':'raté'}
+        <i class="sq p"></i> en pause <i class="sq"></i> non concerné</div></div>
     <div class="pan" style="padding:6px 16px;margin-bottom:14px">${months.map(m=>
-      `<div class="mrow"><span>${m.n}</span><span class="pct">${m.pct===null?'—':m.pct+'% · '+m.d+'/'+m.t}</span></div>`).join('')}</div>`;
+      `<div class="mrow"><span>${m.n} ${m.y}</span><span class="pct">${m.pct===null?'—':m.pct+'% · '+m.d+'/'+m.t}${m.pz?` · ${m.pz} en pause`:''}</span></div>`).join('')}</div>`;
   if(i.detail)h+=`<div class="pan" style="padding:16px;color:var(--dim);font-weight:300;white-space:pre-wrap">${esc(i.detail)}</div>`;
   document.getElementById('detail').innerHTML=h;
+  document.getElementById('hprev').onclick=()=>{heatOff--;renderDetail();};
+  document.getElementById('hnext').onclick=()=>{if(heatOff<0){heatOff++;renderDetail();}};
+  const nw=document.getElementById('hnow');if(nw)nw.onclick=()=>{heatOff=0;renderDetail();};
 }
 
 /* ================= OBJECTIFS ================= */
@@ -1340,6 +1442,11 @@ function formItem(type,editId){
       <div class="lib">${lib.map((x,k)=>`<button data-lib="${k}">${esc(x.name)}</button>`).join('')}</div>`:''}
     <label>Nom</label><input type="text" id="f-name" autocomplete="off" value="${ed?esc(ed.name):''}"
       placeholder="${type==='bad'?'Alcool, sucre, café, écrans…':'Skincare, sport, prière…'}">
+    <label>Famille</label>
+    <div class="choice" id="famsel">
+      ${(S.families||[]).map(f=>`<button data-f="${f.id}" class="${ed&&ed.fam===f.id?'sel':''}">${esc(f.name)}</button>`).join('')}
+      <button data-f="" class="${(!ed||!ed.fam)?'sel':''}">Sans famille</button>
+      <button id="f-newfam">+ Nouvelle</button></div>
     <label>Détail</label><textarea id="f-det" placeholder="1. Nettoyant\n2. Essence\n3. Contour des yeux">${ed?esc(ed.detail||''):''}</textarea>
     <label>Fréquence</label>
     <div class="choice"><button id="c-obj" class="${(!ed||ed.recurrent)?'sel':''}">Récurrent</button>
@@ -1356,6 +1463,19 @@ function formItem(type,editId){
       <input type="date" id="f-date" value="${ed&&ed.date?ed.date:iso(cursor)}"></div>
     <div class="btnrow"><button class="btn" id="f-ok">${ed?'Enregistrer':'Créer'}</button>
       <button class="btn ghost" id="f-no">Annuler</button></div>`);
+  let fam=ed?(ed.fam||null):null;
+  const paintFam=()=>document.querySelectorAll('#famsel button[data-f]').forEach(b=>
+    b.classList.toggle('sel',(b.dataset.f||null)===fam));
+  document.querySelectorAll('#famsel button[data-f]').forEach(b=>b.onclick=()=>{
+    fam=b.dataset.f||null;paintFam();});
+  document.getElementById('f-newfam').onclick=()=>{
+    const n=prompt('Nom de la famille (Santé, Spirituel, Travail…)');
+    if(!n||!n.trim())return;
+    fam=addFamily(n.trim());save();
+    const c=document.getElementById('famsel');
+    const b=document.createElement('button');b.dataset.f=fam;b.textContent=n.trim();
+    b.onclick=()=>{fam=b.dataset.f;paintFam();};
+    c.insertBefore(b,document.getElementById('f-newfam'));paintFam();};
   let rec=ed?ed.recurrent:true;
   let days=(ed&&ed.recurrent&&ed.days&&ed.days.length)?ed.days.slice():[0,1,2,3,4,5,6];
   const o=document.getElementById('c-obj'),pn=document.getElementById('c-pon'),
@@ -1373,6 +1493,7 @@ function formItem(type,editId){
     document.getElementById('f-name').value=x.name;
     document.getElementById('f-det').value=x.detail||'';
     if(x.days&&x.days.length){days=x.days.slice();paint();}
+    if(x.fam!==undefined){fam=x.fam;paintFam();}
     toast('Repris de la bibliothèque');});
   document.getElementById('f-no').onclick=sheetClose;
   document.getElementById('f-ok').onclick=()=>{
@@ -1384,12 +1505,13 @@ function formItem(type,editId){
       ed.name=n;ed.detail=det;ed.recurrent=rec;
       ed.days=rec?days.slice():null;
       ed.date=rec?null:document.getElementById('f-date').value;
+      ed.fam=fam;
     }else{
       S.items.push({id:uid(),moment,type,name:n,detail:det,recurrent:rec,
         days:rec?days.slice():null,date:rec?null:document.getElementById('f-date').value,
-        created:iso(cursor),ord:nextOrd(moment,type),pauses:[]});
+        fam:fam,created:iso(cursor),ord:nextOrd(moment,type),pauses:[]});
     }
-    remember({name:n,detail:det,moment,type,recurrent:rec,days:rec?days.slice():null});
+    remember({name:n,detail:det,moment,type,recurrent:rec,days:rec?days.slice():null,fam});
     save();sheetClose();render();toast(ed?'Modifié':'Créé');};
   focusFirst();
 }
@@ -1753,7 +1875,7 @@ function reportMonth(dd){
 
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='2.0';
+const VERSION='3.0';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -1763,6 +1885,7 @@ function lastExportLabel(){
 function renderSet(){
   const r=S.settings.rappels||{on:false,matin:'07:00',soir:'21:30'};
   const nb=S.items.length,ne=(S.evts||[]).length,nj=Object.keys(S.log||{}).length;
+  const gp=(S.gpauses||[]).find(p=>!p.to||p.to>=today());
   let h=`<div class="block"><h3>Rappels</h3>
     <div class="empty">Deux notifications par jour, avec un texte qui change à chaque fois.</div>
     <div class="switch pan"><span>Activer les rappels</span>
@@ -1772,10 +1895,10 @@ function renderSet(){
       <div><label>Soir</label><input type="time" id="r-s" value="${r.soir}"></div></div>
     <button class="btn ghost" id="rsave" style="width:100%">Enregistrer les horaires</button>
     <button class="btn ghost" id="rtest" style="width:100%;margin-top:8px">Tester une notification</button>
-    <p class="empty" style="margin-top:10px">Les rappels partent quand l'appli est installée sur l'écran d'accueil. Si ton téléphone la met en veille profonde, double-les avec une alarme classique.</p></div>
+    <p class="empty" style="margin-top:10px">${gp?'Les rappels sont suspendus : une pause générale est en cours.':"Les rappels partent quand l'appli est installée sur l'écran d'accueil."}</p></div>
 
   <div class="block"><h3>Sauvegarde</h3>
-    <div class="empty">Tes données vivent sur cet appareil uniquement. Exporte-les régulièrement : c'est ce qui te protège d'un changement de téléphone ou d'un cache vidé.</div>
+    <div class="empty">Tes données vivent sur cet appareil uniquement. Exporte-les régulièrement.</div>
     <div class="kpis"><div class="pan"><div class="v">${nb}</div><div class="l">Lignes<br>suivies</div></div>
       <div class="pan"><div class="v">${nj}</div><div class="l">Jours<br>enregistrés</div></div>
       <div class="pan"><div class="v">${ne}</div><div class="l">Événements<br>agenda</div></div></div>
@@ -1785,23 +1908,53 @@ function renderSet(){
       <button class="btn ghost" id="sharejson">Partager la sauvegarde</button></div>
     <input type="file" id="impfile" accept=".json,application/json" style="display:none">
     <p class="empty" style="margin-top:10px">Le fichier s'appelle <b>SurH40-sauvegarde-${stamp()}.json</b> et se range dans tes Téléchargements.
-      Les anciennes sauvegardes sont conservées : pense à faire le ménage de temps en temps.
-      La restauration remplace intégralement les données de cet appareil.</p></div>
+      Les anciennes sont conservées. La restauration remplace intégralement les données de cet appareil.</p></div>
+
+  <div class="block"><h3>Pause générale</h3>
+    <div class="empty">Le mode vacances : toutes les habits et tous les Bad Habits sont suspendus.
+      Les rappels se taisent, les jours n'entrent plus dans les stats et apparaissent en doré dans les carrés.
+      Ta série repart à zéro au retour, sans être comptée comme un échec — ton record, lui, est conservé.</div>`;
+  if(gp){
+    h+=`<div class="dette"><h4>Pause en cours</h4>
+      <p>Depuis le ${gp.from}${gp.to?`, reprise le ${shift(new Date(gp.to),1)}`:', sans date de reprise'}.</p>
+      <button class="btn" data-endgp="1">Reprendre maintenant</button></div>`;
+  }else{
+    h+=`<div class="two"><div><label>Du</label><input type="date" id="gp-from" value="${today()}"></div>
+      <div><label>Reprise le</label><input type="date" id="gp-to"></div></div>
+      <button class="btn" id="gpstart" style="width:100%">Mettre tout en pause</button>`;
+  }
+  const past=(S.gpauses||[]).filter(p=>p.to&&p.to<today());
+  if(past.length)h+=past.slice(-4).reverse().map(p=>
+    `<div class="mrow"><span style="color:var(--dim)">${p.from} → ${p.to}</span><span class="pct">terminée</span></div>`).join('');
+  h+=`</div>
+
+  <div class="block"><h3>Familles</h3>
+    <div class="empty">Les axes qui regroupent tes lignes dans les statistiques.</div>`;
+  (S.families||[]).forEach(f=>{
+    const n=S.items.filter(i=>i.fam===f.id).length;
+    h+=`<div class="item pan"><div class="head">
+      <span style="flex:1;font-weight:300">${esc(f.name)}</span>
+      <span class="tag obj">${n} ligne${n>1?'s':''}</span>
+      <button class="del" data-renfam="${f.id}" style="padding:0 6px;font-size:13px">renommer</button>
+      <button class="del" data-delfam="${f.id}" style="padding:0 4px;font-size:17px">×</button></div></div>`;});
+  if(!(S.families||[]).length)h+=`<div class="empty">Aucune famille. Tu peux en créer depuis le formulaire d'une habit.</div>`;
+  h+=`<button class="add" data-newfam="1">+ Créer une famille</button></div>
+
+  <div class="block"><h3>Repartir à zéro</h3>
+    <div class="empty">Remet les compteurs à zéro sans rien effacer. L'historique reste consultable dans le calendrier.</div>
+    <button class="add" data-reset="1" style="border-color:rgba(201,162,39,.45);color:var(--or)">Repartir à zéro</button>
+    ${S.settings.statsFrom?`<div class="mrow"><span>Comptage depuis</span><span class="pct">${S.settings.statsFrom}
+      <button class="del" data-clearfrom="1" style="padding:0 6px;font-size:12px">annuler</button></span></div>`:''}</div>
+
+  <div class="block bad"><h3>Zone rouge</h3>
+    <button class="add" data-wipe="1" style="border-color:rgba(169,59,39,.4);color:var(--rouge)">Tout effacer et repartir de zéro</button></div>
 
   <div class="block"><h3>Installation</h3>
     <div class="empty">Android : menu du navigateur → « Ajouter à l'écran d'accueil ».<br>
       iPhone : bouton Partager → « Sur l'écran d'accueil ».<br>
       PC : l'icône d'installation apparaît à droite de la barre d'adresse.</div>
     <div class="mrow"><span>Version</span><span class="pct">SurH40 ${VERSION}</span></div>
-    <div class="mrow"><span>Mode hors ligne</span><span class="pct">${('serviceWorker' in navigator)?'disponible':'non supporté'}</span></div></div>
-
-  <div class="block"><h3>Repartir à zéro</h3>
-    <div class="empty">Efface tout l'historique — cases cochées, cheats, bilans, repas, dettes — et remet les compteurs à zéro.
-      Tes habits, ton agenda, tes objectifs et tes outils sont conservés. Exporte une sauvegarde avant, par sécurité.</div>
-    <button class="add" data-reset="1" style="border-color:rgba(201,162,39,.45);color:var(--or)">Remettre les stats à zéro</button></div>
-
-  <div class="block bad"><h3>Zone rouge</h3>
-    <button class="add" data-wipe="1" style="border-color:rgba(169,59,39,.4);color:var(--rouge)">Tout effacer et repartir de zéro</button></div>`;
+    <div class="mrow"><span>Mode hors ligne</span><span class="pct">${('serviceWorker' in navigator)?'disponible':'non supporté'}</span></div></div>`;
   document.getElementById('set').innerHTML=h;
   document.getElementById('rtog').onclick=async()=>{
     const on=!(S.settings.rappels.on);
@@ -1817,6 +1970,13 @@ function renderSet(){
   document.getElementById('expjson').onclick=()=>exportData(false);
   document.getElementById('sharejson').onclick=()=>exportData(true);
   document.getElementById('impbtn').onclick=()=>document.getElementById('impfile').click();
+  const gs=document.getElementById('gpstart');
+  if(gs)gs.onclick=()=>{
+    const from=document.getElementById('gp-from').value;if(!from){toast('Il manque la date');return;}
+    let to=document.getElementById('gp-to').value||null;
+    if(to){const d=new Date(to);d.setDate(d.getDate()-1);to=iso(d);}
+    S.gpauses=S.gpauses||[];S.gpauses.push({from,to});
+    save();planRappels();render();toast('Tout est en pause');};
   document.getElementById('impfile').onchange=e=>{
     const f=e.target.files[0];if(!f)return;
     const rd=new FileReader();
@@ -1828,6 +1988,59 @@ function renderSet(){
       save();render();toast('Sauvegarde restaurée');
     }catch(err){toast('Fichier illisible');}};
     rd.readAsText(f);};
+}
+
+/* ---- assistant Repartir à zéro, avec retour possible ---- */
+function wizReset(step,per){
+  step=step||1;per=per||{};
+  if(step===1){
+    sheetOpen(`<h3>Repartir à zéro</h3>
+      <p style="color:var(--dim);font-weight:300;font-size:14.5px;margin:-10px 0 16px">
+      Les compteurs — série, global, dettes, récompenses — repartent de zéro à partir d'aujourd'hui.
+      Rien n'est effacé : ton historique reste consultable dans le calendrier.</p>
+      <p style="font-size:15px;margin:0 0 16px">Veux-tu aussi supprimer l'historique d'une période ?</p>
+      <div class="btnrow"><button class="btn ghost" id="w-non">Non, garder tout</button>
+        <button class="btn" id="w-oui">Oui, choisir une période</button></div>
+      <button class="btn ghost" id="w-cancel" style="width:100%;margin-top:10px">Annuler</button>`);
+    document.getElementById('w-cancel').onclick=sheetClose;
+    document.getElementById('w-non').onclick=()=>wizReset(3,{del:false});
+    document.getElementById('w-oui').onclick=()=>wizReset(2,{del:true});
+    return;
+  }
+  if(step===2){
+    sheetOpen(`<h3>Période à supprimer</h3>
+      <p style="color:var(--dim);font-weight:300;font-size:14.5px;margin:-10px 0 16px">
+      Seules ces journées seront effacées. Tout ce qui est en dehors reste intact.</p>
+      <div class="two"><div><label>Du</label><input type="date" id="w-from" value="${shift(new Date(),-30)}"></div>
+        <div><label>Au</label><input type="date" id="w-to" value="${today()}"></div></div>
+      <div class="btnrow"><button class="btn ghost" id="w-back">‹ Retour</button>
+        <button class="btn" id="w-next">Continuer</button></div>`);
+    document.getElementById('w-back').onclick=()=>wizReset(1);
+    document.getElementById('w-next').onclick=()=>{
+      const from=document.getElementById('w-from').value,to=document.getElementById('w-to').value;
+      if(!from||!to||from>to){toast('Période invalide');return;}
+      wizReset(3,{del:true,from,to});};
+    return;
+  }
+  const n=per.del?Object.keys(S.log||{}).filter(d=>d>=per.from&&d<=per.to).length:0;
+  sheetOpen(`<h3>Confirmer</h3>
+    <div class="mrow"><span>Compteurs remis à zéro</span><span class="pct">oui, à partir d'aujourd'hui</span></div>
+    <div class="mrow"><span>Historique supprimé</span><span class="pct">${per.del?`${per.from} → ${per.to}`:'non'}</span></div>
+    ${per.del?`<div class="mrow"><span>Journées concernées</span><span class="pct">${n}</span></div>`:''}
+    <p class="empty" style="margin-top:12px">${per.del?'Cette suppression est définitive. Exporte une sauvegarde si tu hésites.':'Aucune donnée ne sera perdue.'}</p>
+    <div class="btnrow"><button class="btn ghost" id="w-back">‹ Retour</button>
+      <button class="btn" id="w-go">Valider</button></div>`);
+  document.getElementById('w-back').onclick=()=>wizReset(per.del?2:1,per);
+  document.getElementById('w-go').onclick=()=>{
+    if(per.del){
+      Object.keys(S.log).forEach(d=>{if(d>=per.from&&d<=per.to)delete S.log[d];});
+      Object.keys(S.cheats).forEach(d=>{if(d>=per.from&&d<=per.to)delete S.cheats[d];});
+      Object.keys(S.journal).forEach(d=>{if(d>=per.from&&d<=per.to)delete S.journal[d];});
+      Object.keys(S.meals).forEach(d=>{const k=d.split('|')[0];if(k>=per.from&&k<=per.to)delete S.meals[d];});
+    }
+    S.settings.statsFrom=today();S.debts=[];S.baseline=0;
+    (S.rewards||[]).forEach(r=>r.claimed=false);
+    save();sheetClose();render();toast('Nouveau départ');};
 }
 function stamp(){
   const d=new Date(),z=n=>String(n).padStart(2,'0');
@@ -1867,6 +2080,7 @@ function notify(txt){
 function planRappels(){
   timers.forEach(clearTimeout);timers=[];
   const r=S.settings.rappels;if(!r||!r.on)return;
+  if(inGPause(today()))return;
   [['matin',r.matin],['soir',r.soir]].forEach(([k,hm])=>{
     if(!hm)return;
     const [H,M]=hm.split(':').map(Number);
@@ -1887,6 +2101,7 @@ function goBack(){
 }
 function go(v,mom,push){
   view=v;if(mom){moment=mom;badOpen=false;}
+  document.querySelector('.datebar').style.display=(v==='stat'||v==='detail')?'none':'flex';
   if(push!==false){try{history.pushState({v,mom:moment},'');}catch(e){}}
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   document.getElementById({home:'s-home',moment:'s-moment',week:'s-week',month:'s-month',
@@ -1909,7 +2124,7 @@ document.addEventListener('click',e=>{
   if(b.id==='closebad'){badOpen=false;return renderMoment();}
   if(d.mom)return go('moment',d.mom);
   if(d.go)return go(d.go);
-  if(d.tog){cycle(d.tog,iso(cursor));renderMoment();renderHome();return;}
+  if(d.tog){cycle(d.tog,iso(cursor));render();return;}
   if(d.togbad){toggleBad(d.togbad,iso(cursor));checkDebt();renderMoment();renderHome();return;}
   if(d.det){if(openDet.has(d.det))openDet.delete(d.det);else openDet.add(d.det);
     const el=document.getElementById('det-'+d.det);if(el)el.classList.toggle('open');return;}
@@ -1930,7 +2145,7 @@ document.addEventListener('click',e=>{
   if(d.cal){calMode=d.cal;return renderCal();}
   if(d.mday)return renderMonthDay(d.mday);
   if(d.open){cursor=new Date(d.open);cursor.setHours(12,0,0,0);return go('home');}
-  if(d.stat){detailId=d.stat;return go('detail');}
+  if(d.stat){detailId=d.stat;heatOff=0;return go('detail');}
   if(d.tool){openTool=(openTool===d.tool)?null:d.tool;return renderTools();}
   if(d.newtool)return formNewTool();
   if(d.deltool){if(confirm('Supprimer cet outil et toutes ses entrées ?')){
@@ -1942,12 +2157,16 @@ document.addEventListener('click',e=>{
   if(d.delent){const[k,i]=d.delent.split('|');
     if(confirm('Supprimer cette entrée ?')){S.tools[k].splice(+i,1);save();renderTools();}return;}
   if(d.niv){S.settings.seuilJour=+d.niv;save();render();toast('Palier '+niveauNom(+d.niv));return;}
-  if(d.reset){
-    if(confirm("Remettre les statistiques à zéro ? L'historique sera effacé, tes habits seront conservées.")){
-      S.log={};S.cheats={};S.journal={};S.meals={};S.debts=[];S.baseline=0;
-      (S.rewards||[]).forEach(r=>r.claimed=false);
-      save();render();toast('Compteurs remis à zéro');}
-    return;}
+  if(d.reset)return wizReset(1);
+  if(d.clearfrom){S.settings.statsFrom=null;save();render();toast('Comptage complet rétabli');return;}
+  if(d.endgp){const gp=(S.gpauses||[]).find(x=>!x.to||x.to>=today());
+    if(gp){gp.to=shift(new Date(),-1);save();planRappels();render();toast('Reprise');}return;}
+  if(d.newfam){const n=prompt('Nom de la famille');if(n&&n.trim()){addFamily(n.trim());save();renderSet();}return;}
+  if(d.renfam){const f=S.families.find(x=>x.id===d.renfam);
+    if(f){const n=prompt('Nouveau nom',f.name);if(n&&n.trim()){f.name=n.trim();save();render();}}return;}
+  if(d.delfam){if(confirm('Supprimer cette famille ? Ses lignes passeront en « Sans famille ».')){
+    S.items.forEach(i=>{if(i.fam===d.delfam)i.fam=null;});
+    S.families=S.families.filter(f=>f.id!==d.delfam);save();render();}return;}
   if(d.wipe){if(confirm('Effacer définitivement toutes tes données ?')&&confirm('Vraiment ? Cette action est irréversible.')){
     S=JSON.parse(JSON.stringify(BLANK));save();render();toast('Tout a été effacé');}return;}
   if(d.addg)return formGobj();
@@ -2004,7 +2223,7 @@ document.getElementById('send-month').onclick=()=>{SEND=true;reportMonth(cursor)
       saved.evts.push({id:Math.random().toString(36).slice(2,9),title:e.title,start:null,end:null,
         note:'',recurrent:false,days:null,date:k,from:null})));}
   if(saved)S=Object.assign(JSON.parse(JSON.stringify(BLANK)),saved,
-    {settings:Object.assign({window:15,seuil:3,delai:5,seuilJour:70,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
+    {settings:Object.assign({window:15,seuil:3,delai:5,seuilJour:70,statsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
   render();planRappels();
   try{history.replaceState({v:'home'},'');}catch(e){}
   if('serviceWorker' in navigator&&location.protocol!=='file:')
