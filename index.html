@@ -245,9 +245,10 @@ label{display:block;font-family:'Barlow Condensed',sans-serif;text-transform:upp
 .week{display:flex;flex-direction:column;gap:7px}
 .day{padding:13px 15px;border-left:2px solid var(--trait)}
 .day.today{border-left-color:var(--or)}
-.day h4{margin:0 0 7px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
-  letter-spacing:.2em;font-size:12px;color:var(--dim);display:flex;justify-content:space-between}
-.day.today h4{color:var(--or)}
+.dayhead{margin:0 0 7px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
+  letter-spacing:.2em;font-size:12px;color:var(--dim);display:flex;justify-content:space-between;
+  width:100%;background:none;border:0;padding:0;cursor:pointer}
+.day.today .dayhead{color:var(--or)}
 .ev{font-size:15px;padding:3px 0;display:flex;gap:9px;align-items:center;font-weight:300}
 .ev .dot{width:5px;height:5px;border-radius:50%;background:var(--olive);flex:none}
 .ev button{background:none;border:0;color:var(--dim);cursor:pointer;font-size:16px;padding:0 4px}
@@ -330,7 +331,14 @@ span.chip{cursor:default}
   text-transform:uppercase;font-size:11px;color:var(--or)}
 .verdict p{margin:0 0 7px;font-size:15px;font-weight:300}
 .fam{padding:16px;margin-bottom:10px}
-.famhead{display:flex;gap:14px;align-items:center;margin-bottom:14px}
+.famhead{display:flex;gap:14px;align-items:center;width:100%;background:none;border:0;
+  color:var(--marbre);font:inherit;text-align:left;cursor:pointer;padding:0}
+.famhead .c{color:var(--or);font-size:16px;flex:none;transition:transform .2s}
+.fam.open .famhead .c{transform:rotate(90deg)}
+.fambody{display:none;margin-top:14px}
+.fam.open .fambody{display:block;animation:fade .25s ease}
+.stripm{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim);margin-top:5px}
 .famdon{flex:none}
 .famnom{font-family:'Cinzel',serif;font-size:17px;letter-spacing:.08em;font-weight:500}
 .famrow{display:block;width:100%;text-align:left;background:rgba(0,0,0,.22);border:1px solid var(--trait);
@@ -340,6 +348,8 @@ span.chip{cursor:default}
 .famrow.bad .n{color:var(--rouge)}
 .strip{display:flex;gap:2px;margin-top:9px;flex-wrap:nowrap;overflow:hidden}
 .strip .sq{width:8px;height:8px;border-radius:1.5px;flex:none}
+
+.strip .sq.g{background:rgba(255,255,255,.13)}
 .sq.p{background:repeating-linear-gradient(45deg,rgba(201,162,39,.55) 0 3px,rgba(201,162,39,.2) 3px 6px)}
 .stat{padding:14px 15px;margin-bottom:7px;cursor:pointer;width:100%;text-align:left;
   color:var(--marbre);font:inherit;display:block}
@@ -358,6 +368,7 @@ span.chip{cursor:default}
 .heat{overflow-x:auto;padding:16px;margin-bottom:14px}
 .heatgrid{display:flex;gap:3px}
 .heatcol{display:flex;flex-direction:column;gap:3px}
+.heatgrid .sq.g{background:rgba(255,255,255,.13)}
 .heatgrid .sq{width:13px;height:13px;border-radius:2px;background:rgba(255,255,255,.045)}
 .legend .sq{width:13px;height:13px;border-radius:2px;background:rgba(255,255,255,.045)}
 .sq{width:13px;height:13px;border-radius:2px;background:rgba(255,255,255,.045)}
@@ -374,6 +385,15 @@ span.chip{cursor:default}
 .mrow:last-child{border:0}
 
 /* objectifs */
+.bar-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap;padding:11px 13px;margin-bottom:7px;
+  border:1px solid var(--trait);border-left-width:3px;border-radius:var(--r);background:rgba(0,0,0,.2)}
+.bpill{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.16em;
+  font-size:11.5px;padding:4px 10px;border-radius:20px;flex:none}
+.bseuil{font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.12em;flex:none}
+.bdesc{flex:1 1 100%;font-size:13.5px;font-weight:300;color:var(--dim)}
+.palgrid{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
+.pcell{width:15px;height:15px;border-radius:3px;background:rgba(255,255,255,.05);flex:none;display:inline-block}
+.pcell.pz{background:repeating-linear-gradient(45deg,rgba(201,162,39,.5) 0 3px,rgba(201,162,39,.18) 3px 6px)}
 .goal{padding:15px 16px;margin-bottom:8px}
 .goal h4{margin:0 0 4px;font-family:'Cinzel',serif;font-size:15px;letter-spacing:.06em;font-weight:500}
 .goal .rw{color:var(--or);font-size:14.5px;font-weight:300}
@@ -535,10 +555,12 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,seuilJour:70,statsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
+const openFam=new Set();
+let lastTap={k:null,t:0};
 let view='home',moment='matin',detailId=null,badOpen=false,badStatOpen=false,openTool=null;
 const openDet=new Set();
 
@@ -586,8 +608,14 @@ const QUOTES=[
  ["La motivation te fait démarrer. L'habitude te fait continuer.","Jim Ryun"],
  ["On ne se relève pas parce qu'on est fort. On devient fort parce qu'on se relève.","SurH40"]
 ];
-const NIVEAUX=[{v:60,n:'Novice'},{v:70,n:'Régulier'},{v:80,n:'Boss'}];
-const niveauNom=v=>(NIVEAUX.find(x=>x.v===v)||{n:'Perso'}).n;
+const BAREME=[
+ {v:80,n:'Boss',c:'201,162,39',d:"tout tenu ou presque. La référence."},
+ {v:70,n:'Régulier',c:'186,190,196',d:"la structure tient. C'est le rythme de croisière."},
+ {v:60,n:'Novice',c:'168,131,74',d:"la journée compte. Tu es dans la série."},
+ {v:0,n:'Décrochage',c:'169,59,39',d:"sous 60 %, la journée ne compte pas et la série s'arrête."}];
+const SEUIL=60;
+function palier(pct){return pct===null?null:BAREME.find(x=>pct>=x.v);}
+function niveauNom(v){const p=palier(v);return p?p.n:'—';}
 const MOODS=[
  {v:1,t:'Boss',d:"tout tenu, aucun écart. C'est la référence."},
  {v:2,t:'Ça tient',d:"la structure a résisté, malgré une accroc ou deux."},
@@ -704,10 +732,16 @@ function statDays(n){
   return l;
 }
 /* état : 0 = en cours (gris), 1 = OK (vert), 2 = NOK (rouge) */
-const state=(id,date)=>(S.log[date]&&S.log[date][id])||0;
+const rawState=(id,date)=>(S.log[date]&&S.log[date][id])||0;
+/* un jour passé sans décision vaut rouge : on ne triche pas avec soi-même */
+function state(id,date){
+  const v=rawState(id,date);
+  if(v)return v;
+  return date<today()?2:0;
+}
 const isDone=(id,date)=>state(id,date)===1;
 function cycle(id,date){if(!S.log[date])S.log[date]={};
-  const n=(state(id,date)+1)%3;
+  const n=(rawState(id,date)+1)%3;
   if(n===0)delete S.log[date][id];else S.log[date][id]=n;save();}
 function toggleBad(id,date){if(!S.log[date])S.log[date]={};
   if(S.log[date][id]===1)delete S.log[date][id];else S.log[date][id]=1;save();}
@@ -736,7 +770,10 @@ function ecartsOn(date){
   return n;
 }
 function ecartsWindow(){
-  return lastDays(S.settings.window).reduce((a,d)=>a+ecartsOn(d),0);
+  let l=lastDays(S.settings.window);
+  const from=S.settings.ecartsFrom;
+  if(from)l=l.filter(d=>d>=from);
+  return l.reduce((a,d)=>a+ecartsOn(d),0);
 }
 function openDebt(){return S.debts.find(d=>!d.done);}
 function checkDebt(){
@@ -749,7 +786,7 @@ function checkDebt(){
     S.baseline=e;save();
   }
 }
-function seuilJ(){return S.settings.seuilJour||70;}
+function seuilJ(){return SEUIL;}
 function streakDays(){
   const S0=seuilJ();let s=0;
   for(let k=0;k<400;k++){const d=shift(new Date(),-k);const sc=dayScore(d);
@@ -922,8 +959,8 @@ function renderCal(){
   document.getElementById('cal-tag').textContent=calMode==='day'
     ?"Ta journée par tranches horaires, habits en tête de chaque bloc."
     :calMode==='week'
-    ?"Ce que tu poses ici remonte dans le mois, et sur l'accueil le jour venu."
-    :"Chaque case porte ton pourcentage du jour. Touche-la pour l'ouvrir.";
+    ?"Touche deux fois un jour pour ouvrir sa journée."
+    :"Chaque case porte son pourcentage. Touche deux fois pour ouvrir la journée.";
   document.querySelectorAll('.seg button').forEach(b=>b.classList.toggle('sel',b.dataset.cal===calMode));
   renderDay();renderWeek();renderMonth();
 }
@@ -964,7 +1001,8 @@ function renderWeek(){
     const d=new Date(base);d.setDate(base.getDate()+k);const key=iso(d);
     const sc=dayScore(key),evs=evtsFor(key),pon=S.items.filter(i=>!i.recurrent&&i.date===key);
     h+=`<div class="day pan ${key===today()?'today':''}">
-      <h4><span>${DOW[d.getDay()]} ${d.getDate()}</span><span class="pct">${sc.pct===null?'':sc.pct+'%'}</span></h4>`;
+      <button class="dayhead" data-wday="${key}"><span>${DOW[d.getDay()]} ${d.getDate()}</span>
+        <span class="pct">${sc.pct===null?'':sc.pct+'%'} ›</span></button>`;
     evs.forEach(e=>h+=`<button class="ev evb" data-evt="${e.id}"><i class="dot"></i>
       ${e.start?`<span class="hr">${e.start}</span>`:''}<span style="flex:1;text-align:left">${esc(e.title)}</span>
       ${e.recurrent?'<i class="rec">⟳</i>':''}</button>`);
@@ -980,12 +1018,12 @@ function monthPct(d){const y=d.getFullYear(),m=d.getMonth();let t=0,o=0;
   for(let k=1;k<=31;k++){const dd=new Date(y,m,k);if(dd.getMonth()!==m)break;
     const s=dayScore(iso(dd));t+=s.tot;o+=s.ok;}
   return t?Math.round(o/t*100):null;}
-const PAL=[{v:80,n:'Boss',c:'201,162,39'},{v:70,n:'Régulier',c:'123,166,92'},
-  {v:60,n:'Novice',c:'168,131,74'}];
+/* le calendrier reste sur le code universel de l'appli : vert, rouge, gris.
+   Or, argent et bronze sont réservés à la page Objectifs. */
 function palierCol(pct){
   if(pct===null)return 'rgba(255,255,255,.02)';
-  const p=PAL.find(x=>pct>=x.v);
-  return p?`rgba(${p.c},${.2+.42*(pct/100)})`:`rgba(169,59,39,${.2+.42*(pct/100)})`;
+  const c=pct>=SEUIL?'123,166,92':'169,59,39';
+  return `rgba(${c},${.2+.42*(pct/100)})`;
 }
 function renderMonth(){
   const y=monthCursor.getFullYear(),m=monthCursor.getMonth();
@@ -1003,10 +1041,12 @@ function renderMonth(){
   }
   document.getElementById('mgrid').innerHTML=h;
   document.getElementById('mday').innerHTML=`<div class="legend" style="flex-wrap:wrap;gap:12px">
-    ${PAL.map(x=>`<span style="display:inline-flex;align-items:center;gap:6px">
-      <i style="width:12px;height:12px;border-radius:2px;background:rgba(${x.c},.55)"></i>${x.n} ${x.v}%</span>`).join('')}
     <span style="display:inline-flex;align-items:center;gap:6px">
-      <i style="width:12px;height:12px;border-radius:2px;background:rgba(169,59,39,.55)"></i>En dessous</span>
+      <i style="width:12px;height:12px;border-radius:2px;background:rgba(123,166,92,.55)"></i>Journée tenue · 60 % ou plus</span>
+    <span style="display:inline-flex;align-items:center;gap:6px">
+      <i style="width:12px;height:12px;border-radius:2px;background:rgba(169,59,39,.55)"></i>Décrochage · sous 60 %</span>
+    <span style="display:inline-flex;align-items:center;gap:6px">
+      <i style="width:12px;height:12px;border-radius:2px;background:rgba(255,255,255,.06)"></i>Rien de suivi</span>
     <span style="display:inline-flex;align-items:center;gap:6px">
       <i class="evd" style="position:static;width:6px;height:6px"></i>agenda / ponctuel</span></div>`;
 }
@@ -1054,7 +1094,7 @@ function renderStat(){
     <p style="color:var(--dim)">${S.settings.statsFrom?`Comptage depuis le ${S.settings.statsFrom}.`:"Le rapport entre ce que tu as décidé de faire et ce que tu as fait."}</p>
     ${pausedDays?`<p style="color:var(--or)">${pausedDays} jour${pausedDays>1?'s':''} en pause sur la période.</p>`:''}</div></div>`;
 
-  h+=`<div class="kpis"><div class="pan"><div class="v">${streakDays()}</div><div class="l">Série ${seuilJ()}%<br>${niveauNom(seuilJ())}</div></div>
+  h+=`<div class="kpis"><div class="pan"><div class="v">${streakDays()}</div><div class="l">Série<br>en cours</div></div>
     <div class="pan"><div class="v">${bestStreak()}</div><div class="l">Record<br>historique</div></div>
     <div class="pan"><div class="v">${gobjYear()}</div><div class="l">Objectifs<br>réalisés</div></div>
     <div class="pan"><div class="v">${worstDow(days)}</div><div class="l">Jour<br>faible</div></div></div>`;
@@ -1080,47 +1120,61 @@ function renderStat(){
       <p style="color:var(--dim);font-size:14px">Travaille une seule famille à la fois. C'est plus lent, ça tient plus longtemps.</p></div>`;
   }
 
+  const mdays=monthDays();
   scored.forEach(x=>{
     const c=x.pct===null?'':x.pct>=80?'':x.pct>=50?'mid':'low';
-    h+=`<div class="fam pan"><div class="famhead">
+    const key=x.f.id||'none';
+    const op=openFam.has(key);
+    h+=`<div class="fam pan ${op?'open':''}"><button class="famhead" data-fam="${key}">
       <div class="famdon">${donut(x.pct??0,58)}</div>
       <div style="flex:1"><div class="famnom">${esc(x.f.name)}</div>
-        <div class="sub">${x.pct===null?'pas encore de données':`${x.o}/${x.t} · ${x.pct} %`}</div>
-        <div class="bar"><i class="${c}" style="width:${x.pct||0}%"></i></div></div></div>`;
+        <div class="sub">${x.pct===null?'pas encore de données':`${x.o}/${x.t} · ${x.pct} %`} · ${x.items.length} ligne${x.items.length>1?'s':''}</div>
+        <div class="bar"><i class="${c}" style="width:${x.pct||0}%"></i></div></div>
+      <span class="c">›</span></button><div class="fambody">`;
     const bads=x.items.filter(i=>i.type==='bad');
-    x.items.filter(i=>i.type!=='bad').forEach(i=>h+=famLine(i,days));
-    if(bads.length)h+=badLine(bads,days);
-    h+=`</div>`;
+    x.items.filter(i=>i.type!=='bad').forEach(i=>h+=famLine(i,mdays,days));
+    if(bads.length)h+=badLine(bads,mdays,days);
+    h+=`</div></div>`;
   });
   document.getElementById('stat').innerHTML=h;
 }
 function strip(i,days){
   return `<div class="strip">`+days.map(d=>{
     if(paused(i,d))return `<i class="sq p"></i>`;
+    if(d>today())return `<i class="sq g"></i>`;
     if(!applies(i,d))return `<i class="sq"></i>`;
     const st=i.type==='bad'?(isDone(i.id,d)?1:2):state(i.id,d);
-    return `<i class="sq ${st===1?'v':st===2?'r':''}"></i>`;}).join('')+`</div>`;
+    return `<i class="sq ${st===1?'v':st===2?'r':'g'}"></i>`;}).join('')+`</div>`;
 }
-function famLine(i,days){
+function monthDays(){
+  const d=new Date(),y=d.getFullYear(),m=d.getMonth(),last=new Date(y,m+1,0).getDate();
+  const l=[];for(let k=1;k<=last;k++)l.push(iso(new Date(y,m,k)));
+  return l;
+}
+function famLine(i,mdays,days){
   const pf=itemPerf(i,days);
   const pc=pf?pf.pct:null;
   return `<button class="famrow" data-stat="${i.id}">
     <div class="statline"><span class="n">${esc(i.name)}</span>
       <span class="pct">${pc===null?'pas encore de données':`${pc}% · ${pf.done}/${pf.rel.length}`} ›</span></div>
-    ${strip(i,days)}</button>`;
+    ${strip(i,mdays)}<div class="stripm">${MON[new Date().getMonth()].toLowerCase()}</div></button>`;
 }
-function badLine(bads,days){
+function badLine(bads,mdays,days){
+  const dd=mdays;
   const jours=days.filter(d=>bads.some(i=>applies(i,d)));
   const tenus=jours.filter(d=>bads.filter(i=>applies(i,d)).every(i=>isDone(i.id,d))).length;
   const pc=jours.length?Math.round(tenus/jours.length*100):null;
   return `<div class="famrow bad">
     <div class="statline"><span class="n">Bad Habit</span>
       <span class="pct">${pc===null?'pas encore de données':`${pc}% · ${tenus}/${jours.length}`}</span></div>
-    <div class="strip">`+days.map(d=>{
+    <div class="strip">`+dd.map(d=>{
       const act=bads.filter(i=>applies(i,d));
       if(bads.some(i=>paused(i,d))&&!act.length)return `<i class="sq p"></i>`;
       if(!act.length)return `<i class="sq"></i>`;
-      return `<i class="sq ${act.every(i=>isDone(i.id,d))?'v':'r'}"></i>`;}).join('')+`</div></div>`;
+      if(d>today())return `<i class="sq g"></i>`;
+      if(d===today()&&!act.every(i=>isDone(i.id,d)))return `<i class="sq g"></i>`;
+      return `<i class="sq ${act.every(i=>isDone(i.id,d))?'v':'r'}"></i>`;}).join('')+
+      `</div><div class="stripm">${MON[new Date().getMonth()].toLowerCase()}</div></div>`;
 }
 function dowStats(days){
   const acc=[0,1,2,3,4,5,6].map(()=>({t:0,o:0}));
@@ -1139,28 +1193,31 @@ function renderDetail(){
   const i=S.items.find(x=>x.id===detailId);
   if(!i){document.getElementById('detail').innerHTML='<div class="empty">Ligne introuvable.</div>';return;}
 
-  /* fenêtre de 13 semaines décalée de heatOff blocs */
-  const end=new Date();end.setDate(end.getDate()+heatOff*91);
-  const start=new Date(end);start.setDate(start.getDate()-90);
-  start.setDate(start.getDate()-((start.getDay()+6)%7));
-  const days=[];{let d=new Date(start);
-    while(iso(d)<=iso(end)){days.push(iso(d));d.setDate(d.getDate()+1);}}
+  /* trois mois : le précédent, le mois affiché au centre, le suivant */
+  const base=new Date();base.setDate(1);base.setMonth(base.getMonth()+heatOff);
+  const first=new Date(base.getFullYear(),base.getMonth()-1,1);
+  const last=new Date(base.getFullYear(),base.getMonth()+2,0);
+  const start=new Date(first);start.setDate(start.getDate()-((start.getDay()+6)%7));
+  const nWeeks=Math.ceil(((last-start)/86400000+1)/7);
 
+  const days=[];{let d=new Date(first);
+    while(iso(d)<=iso(last)){days.push(iso(d));d.setDate(d.getDate()+1);}}
   const rel=days.filter(d=>applies(i,d)&&d<=today());
   const done=rel.filter(d=>isDone(i.id,d)).length;
   const pct=rel.length?Math.round(done/rel.length*100):0;
   const nbPause=days.filter(d=>paused(i,d)&&d<=today()).length;
 
   const cols=[];
-  for(let w=0;w<14;w++){
+  for(let w=0;w<nWeeks;w++){
     const col=[];
     for(let k=0;k<7;k++){
       const dt=new Date(start);dt.setDate(start.getDate()+w*7+k);
       const key=iso(dt);
-      if(key>today())col.push('');
+      if(key>today()||key<iso(first)||key>iso(last))col.push('');
       else if(paused(i,key))col.push('p');
       else if(!applies(i,key))col.push('');
-      else col.push(isDone(i.id,key)?'v':'r');
+      else{const st=i.type==='bad'?(isDone(i.id,key)?1:2):state(i.id,key);
+        col.push(st===1?'v':st===2?'r':'g');}
     }
     cols.push(col);
   }
@@ -1168,17 +1225,17 @@ function renderDetail(){
   rel.slice().sort().forEach(d=>{if(isDone(i.id,d)){cur++;best=Math.max(best,cur);}else cur=0;});
 
   const months=[];
-  for(let k=2;k>=0;k--){
-    const d=new Date(end);d.setDate(1);d.setMonth(d.getMonth()-k);
-    const y=d.getFullYear(),m=d.getMonth(),last=new Date(y,m+1,0).getDate();
-    const ds=[];for(let j=1;j<=last;j++){const key=iso(new Date(y,m,j));if(key<=today())ds.push(key);}
+  for(let k=-1;k<=1;k++){
+    const d=new Date(base.getFullYear(),base.getMonth()+k,1);
+    const y=d.getFullYear(),m=d.getMonth(),ld=new Date(y,m+1,0).getDate();
+    const ds=[];for(let j=1;j<=ld;j++){const key=iso(new Date(y,m,j));if(key<=today())ds.push(key);}
     const r=ds.filter(x=>applies(i,x));
     const pz=ds.filter(x=>paused(i,x)).length;
-    months.push({n:MON[m],y,pct:r.length?Math.round(r.filter(x=>isDone(i.id,x)).length/r.length*100):null,
+    months.push({n:MON[m],y,cur:k===0,pct:r.length?Math.round(r.filter(x=>isDone(i.id,x)).length/r.length*100):null,
       d:r.filter(x=>isDone(i.id,x)).length,t:r.length,pz});
   }
   const bad=i.type==='bad';
-  const per=`${MSHORT[start.getMonth()]} ${start.getFullYear()} → ${MSHORT[end.getMonth()]} ${end.getFullYear()}`;
+  const per=`${MON[base.getMonth()]} ${base.getFullYear()}`;
 
   let h=`<h2 class="title">${esc(i.name)}</h2>
     <p class="tagline">${famOf(i)} · ${MOMENTS[i.moment].t} · ${bad?'bad habit':i.type==='todo'?'chose à faire':'habit'} · ${freqLabel(i)}</p>
@@ -1189,21 +1246,22 @@ function renderDetail(){
       ${nbPause?`<p style="color:var(--or)">${nbPause} jour${nbPause>1?'s':''} en pause.</p>`:''}</div></div>
     <div class="mhead"><button class="btn ghost" id="hprev">‹</button>
       <div class="m" style="font-size:14px">${per}</div>
-      <button class="btn ghost" id="hnext" ${heatOff>=0?'disabled style="opacity:.35"':''}>›</button></div>
+      <button class="btn ghost" id="hnext">›</button></div>
     ${heatOff!==0?`<button class="btn ghost" id="hnow" style="width:100%;margin-bottom:14px">Revenir à aujourd'hui</button>`:''}
     <div class="heat pan">
       <div class="heatgrid">${cols.map(c=>`<div class="heatcol">${c.map(v=>`<i class="sq ${v}"></i>`).join('')}</div>`).join('')}</div>
       <div class="heatlab" style="margin:7px 0 0">${cols.map((_,ci)=>{
         const dt=new Date(start);dt.setDate(start.getDate()+ci*7);
-        return `<span style="width:13px">${dt.getDate()<=7?MSHORT[dt.getMonth()]:''}</span>`;}).join('')}</div>
+        const cur=dt.getMonth()===base.getMonth();
+        return `<span style="width:13px${cur?';color:var(--or)':''}">${dt.getDate()<=7?MSHORT[dt.getMonth()]:''}</span>`;}).join('')}</div>
       <div class="legend"><i class="sq v"></i> ${bad?'tenu':'fait'} <i class="sq r"></i> ${bad?'cédé':'raté'}
-        <i class="sq p"></i> en pause <i class="sq"></i> non concerné</div></div>
+        <i class="sq p"></i> en pause <i class="sq g"></i> aujourd'hui <i class="sq"></i> hors période</div></div>
     <div class="pan" style="padding:6px 16px;margin-bottom:14px">${months.map(m=>
-      `<div class="mrow"><span>${m.n} ${m.y}</span><span class="pct">${m.pct===null?'—':m.pct+'% · '+m.d+'/'+m.t}${m.pz?` · ${m.pz} en pause`:''}</span></div>`).join('')}</div>`;
+      `<div class="mrow"${m.cur?' style="color:var(--or)"':''}><span>${m.n} ${m.y}</span><span class="pct">${m.pct===null?'—':m.pct+'% · '+m.d+'/'+m.t}${m.pz?` · ${m.pz} en pause`:''}</span></div>`).join('')}</div>`;
   if(i.detail)h+=`<div class="pan" style="padding:16px;color:var(--dim);font-weight:300;white-space:pre-wrap">${esc(i.detail)}</div>`;
   document.getElementById('detail').innerHTML=h;
   document.getElementById('hprev').onclick=()=>{heatOff--;renderDetail();};
-  document.getElementById('hnext').onclick=()=>{if(heatOff<0){heatOff++;renderDetail();}};
+  document.getElementById('hnext').onclick=()=>{heatOff++;renderDetail();};
   const nw=document.getElementById('hnow');if(nw)nw.onclick=()=>{heatOff=0;renderDetail();};
 }
 
@@ -1212,15 +1270,36 @@ function gobjYear(){const y=String(new Date().getFullYear());
   return (S.gobjs||[]).filter(o=>o.done&&(o.doneDate||'').slice(0,4)===y).length;}
 const NIVX={nano:{t:'Nano',d:'la semaine'},micro:{t:'Micro',d:'le mois ou le trimestre'},macro:{t:'Macro',d:"l'année"}};
 function renderGoals(){
-  const st=streakDays(),ec=ecartsWindow(),deb=openDebt(),sj=seuilJ();
-  let h=`<div class="donutwrap pan"><div class="donut">${donut(Math.min(100,st/15*100),104,'#C9A227')}
+  const st=streakDays(),ec=ecartsWindow(),deb=openDebt();
+  const pj=dayScore(today()).pct, pal=palier(pj);
+  h=`<div class="donutwrap pan"><div class="donut">${donut(Math.min(100,st/15*100),104,'#C9A227')}
     <div class="lbl"><b>${st}</b><span>jours</span></div></div>
-    <div class="txt"><p>Série de <b>${st} jour${st>1?'s':''}</b> au niveau <b style="color:var(--or)">${niveauNom(sj)}</b>.</p>
+    <div class="txt"><p>Série en cours de <b>${st} jour${st>1?'s':''}</b>.</p>
+    <p style="color:var(--dim)">Record historique : <b style="color:var(--or)">${bestStreak()} jours</b>.</p>
+    <p style="color:var(--dim)">Aujourd'hui : ${pj===null?'<b>rien de tranché</b>':`<b style="color:rgb(${pal.c})">${pj} % · ${pal.n}</b>`}</p>
     <p style="color:var(--dim)"><b style="color:${ec>=S.settings.seuil?'var(--rouge)':'var(--marbre)'}">${ec} écart${ec>1?'s':''}</b> sur ${S.settings.window} jours · seuil ${S.settings.seuil}.</p></div></div>`;
 
-  h+=`<div class="block"><h3>Ton palier</h3>
-    <div class="empty">Un jour compte dans ta série s'il atteint ce pourcentage. Monte d'un cran quand le précédent devient facile.</div>
-    <div class="seg">${NIVEAUX.map(n=>`<button data-niv="${n.v}" class="${sj===n.v?'sel':''}">${n.n} ${n.v}%</button>`).join('')}</div></div>`;
+  h+=`<div class="block"><h3>Le barème</h3>
+    <div class="empty">Ton pourcentage du jour te place sur un palier. Novice, Régulier et Boss comptent tous dans la série : seule la couleur change. En dessous de 60 %, la journée ne compte pas et la série repart de zéro.</div>
+    ${BAREME.map(x=>`<div class="bar-row" style="border-color:rgba(${x.c},.45)">
+      <span class="bpill" style="background:rgba(${x.c},.16);color:rgb(${x.c})">${x.n}</span>
+      <span class="bseuil" style="color:rgb(${x.c})">${x.v?'≥ '+x.v+' %':'< 60 %'}</span>
+      <span class="bdesc">${x.d}</span></div>`).join('')}</div>
+
+  <div class="block"><h3>${MON[new Date().getMonth()]} au jour le jour</h3>
+    <div class="empty">Chaque carré porte la couleur du palier atteint ce jour-là.</div>
+    <div class="palgrid">${monthDays().map(d=>{
+      const sc=dayScore(d);
+      if(d>today())return `<i class="pcell"></i>`;
+      if(inGPause(d))return `<i class="pcell pz" title="${d}"></i>`;
+      if(sc.pct===null)return `<i class="pcell" title="${d}"></i>`;
+      const pa=palier(sc.pct);
+      return `<i class="pcell" title="${d} · ${sc.pct}%" style="background:rgba(${pa.c},${.25+.5*(sc.pct/100)})"></i>`;
+    }).join('')}</div>
+    <div class="legend" style="flex-wrap:wrap;gap:11px">${BAREME.map(x=>
+      `<span style="display:inline-flex;align-items:center;gap:6px">
+        <i class="pcell" style="background:rgba(${x.c},.6)"></i>${x.n}</span>`).join('')}
+      <span style="display:inline-flex;align-items:center;gap:6px"><i class="pcell pz"></i>pause</span></div></div>`;
 
   h+=`<div class="block"><h3>Objectifs d'habitudes</h3>
     <div class="empty">Calculés tout seuls sur ta série. Ce sont eux qui comptent dans les stats.</div>`;
@@ -1875,7 +1954,7 @@ function reportMonth(dd){
 
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='3.0';
+const VERSION='3.3';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -1937,8 +2016,8 @@ function renderSet(){
       <span class="tag obj">${n} ligne${n>1?'s':''}</span>
       <button class="del" data-renfam="${f.id}" style="padding:0 6px;font-size:13px">renommer</button>
       <button class="del" data-delfam="${f.id}" style="padding:0 4px;font-size:17px">×</button></div></div>`;});
-  if(!(S.families||[]).length)h+=`<div class="empty">Aucune famille. Tu peux en créer depuis le formulaire d'une habit.</div>`;
-  h+=`<button class="add" data-newfam="1">+ Créer une famille</button></div>
+  if(!(S.families||[]).length)h+=`<div class="empty">Aucune famille pour l'instant. Tu en crées depuis le formulaire d'une habit, bouton « + Nouvelle ».</div>`;
+  h+=`</div>
 
   <div class="block"><h3>Repartir à zéro</h3>
     <div class="empty">Remet les compteurs à zéro sans rien effacer. L'historique reste consultable dans le calendrier.</div>
@@ -2038,7 +2117,7 @@ function wizReset(step,per){
       Object.keys(S.journal).forEach(d=>{if(d>=per.from&&d<=per.to)delete S.journal[d];});
       Object.keys(S.meals).forEach(d=>{const k=d.split('|')[0];if(k>=per.from&&k<=per.to)delete S.meals[d];});
     }
-    S.settings.statsFrom=today();S.debts=[];S.baseline=0;
+    S.settings.statsFrom=today();S.settings.ecartsFrom=shift(new Date(),1);S.debts=[];S.baseline=0;
     (S.rewards||[]).forEach(r=>r.claimed=false);
     save();sheetClose();render();toast('Nouveau départ');};
 }
@@ -2143,8 +2222,18 @@ document.addEventListener('click',e=>{
   if(d.addev)return formEvent(d.addev);
   if(d.evt)return evtDetail(d.evt);
   if(d.cal){calMode=d.cal;return renderCal();}
-  if(d.mday)return renderMonthDay(d.mday);
+  if(d.mday){
+    const now=Date.now();
+    if(lastTap.k===d.mday&&now-lastTap.t<450){lastTap={k:null,t:0};
+      cursor=new Date(d.mday);cursor.setHours(12,0,0,0);calMode='day';return renderCal();}
+    lastTap={k:d.mday,t:now};return renderMonthDay(d.mday);}
+  if(d.wday){
+    const now=Date.now();
+    if(lastTap.k===d.wday&&now-lastTap.t<450){lastTap={k:null,t:0};
+      cursor=new Date(d.wday);cursor.setHours(12,0,0,0);calMode='day';return renderCal();}
+    lastTap={k:d.wday,t:now};toast('Touche à nouveau pour ouvrir la journée');return;}
   if(d.open){cursor=new Date(d.open);cursor.setHours(12,0,0,0);return go('home');}
+  if(d.fam){if(openFam.has(d.fam))openFam.delete(d.fam);else openFam.add(d.fam);renderStat();return;}
   if(d.stat){detailId=d.stat;heatOff=0;return go('detail');}
   if(d.tool){openTool=(openTool===d.tool)?null:d.tool;return renderTools();}
   if(d.newtool)return formNewTool();
@@ -2156,12 +2245,10 @@ document.addEventListener('click',e=>{
   if(d.addtool)return formTool(d.addtool);
   if(d.delent){const[k,i]=d.delent.split('|');
     if(confirm('Supprimer cette entrée ?')){S.tools[k].splice(+i,1);save();renderTools();}return;}
-  if(d.niv){S.settings.seuilJour=+d.niv;save();render();toast('Palier '+niveauNom(+d.niv));return;}
   if(d.reset)return wizReset(1);
-  if(d.clearfrom){S.settings.statsFrom=null;save();render();toast('Comptage complet rétabli');return;}
+  if(d.clearfrom){S.settings.statsFrom=null;S.settings.ecartsFrom=null;save();render();toast('Comptage complet rétabli');return;}
   if(d.endgp){const gp=(S.gpauses||[]).find(x=>!x.to||x.to>=today());
     if(gp){gp.to=shift(new Date(),-1);save();planRappels();render();toast('Reprise');}return;}
-  if(d.newfam){const n=prompt('Nom de la famille');if(n&&n.trim()){addFamily(n.trim());save();renderSet();}return;}
   if(d.renfam){const f=S.families.find(x=>x.id===d.renfam);
     if(f){const n=prompt('Nouveau nom',f.name);if(n&&n.trim()){f.name=n.trim();save();render();}}return;}
   if(d.delfam){if(confirm('Supprimer cette famille ? Ses lignes passeront en « Sans famille ».')){
@@ -2223,7 +2310,7 @@ document.getElementById('send-month').onclick=()=>{SEND=true;reportMonth(cursor)
       saved.evts.push({id:Math.random().toString(36).slice(2,9),title:e.title,start:null,end:null,
         note:'',recurrent:false,days:null,date:k,from:null})));}
   if(saved)S=Object.assign(JSON.parse(JSON.stringify(BLANK)),saved,
-    {settings:Object.assign({window:15,seuil:3,delai:5,seuilJour:70,statsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
+    {settings:Object.assign({window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
   render();planRappels();
   try{history.replaceState({v:'home'},'');}catch(e){}
   if('serviceWorker' in navigator&&location.protocol!=='file:')
