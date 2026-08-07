@@ -385,12 +385,19 @@ span.chip{cursor:default}
 .mrow:last-child{border:0}
 
 /* objectifs */
-.bar-row{display:flex;align-items:center;gap:11px;flex-wrap:wrap;padding:11px 13px;margin-bottom:7px;
-  border:1px solid var(--trait);border-left-width:3px;border-radius:var(--r);background:rgba(0,0,0,.2)}
-.bpill{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.16em;
-  font-size:11.5px;padding:4px 10px;border-radius:20px;flex:none}
-.bseuil{font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.12em;flex:none}
-.bdesc{flex:1 1 100%;font-size:13.5px;font-weight:300;color:var(--dim)}
+.bjauge{display:flex;gap:2px;border-radius:var(--r);overflow:hidden;border:1px solid var(--trait)}
+.bseg{border:0;padding:13px 2px;font:inherit;cursor:pointer;min-width:0;position:relative;
+  font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:11px}
+.bseg span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bseg.sel{box-shadow:inset 0 -3px 0 currentColor}
+.bseg.now::after{content:'';position:absolute;top:4px;left:50%;transform:translateX(-50%);
+  width:5px;height:5px;border-radius:50%;background:currentColor}
+.bech{display:flex;gap:2px;margin-top:5px}
+.bech span{font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--dim);letter-spacing:.1em}
+.bexp{margin-top:11px;padding:12px 14px;border:1px solid var(--trait);border-left-width:3px;
+  border-radius:var(--r);background:rgba(0,0,0,.2);font-size:14px;font-weight:300;color:var(--dim)}
+.bexp b{display:block;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
+  letter-spacing:.16em;font-size:11.5px;margin-bottom:5px}
 .palgrid{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
 .pcell{width:15px;height:15px;border-radius:3px;background:rgba(255,255,255,.05);flex:none;display:inline-block}
 .pcell.pz{background:repeating-linear-gradient(45deg,rgba(201,162,39,.5) 0 3px,rgba(201,162,39,.18) 3px 6px)}
@@ -561,6 +568,8 @@ let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
 const openFam=new Set();
 let lastTap={k:null,t:0};
+let setFamOpen=false;
+let palOpen=null;
 let view='home',moment='matin',detailId=null,badOpen=false,badStatOpen=false,openTool=null;
 const openDet=new Set();
 
@@ -1035,9 +1044,9 @@ function renderMonth(){
   for(let k=1;k<=last;k++){
     const key=iso(new Date(y,m,k));const s=dayScore(key);
     const ev=hasEvt(key)||S.items.some(i=>!i.recurrent&&i.date===key);
-    const col=key>=today()?'rgba(255,255,255,.02)':palierCol(s.pct);
+    const col=(key>=today()||horsComptage(key))?'rgba(255,255,255,.02)':palierCol(s.pct);
     h+=`<button class="cell ${key===today()?'today':''}" data-mday="${key}" style="background:${col}">
-      ${k}${(s.pct!==null&&key<today())?`<small>${s.pct}%</small>`:''}${ev?'<i class="evd"></i>':''}</button>`;
+      ${k}${(s.pct!==null&&key<today()&&!horsComptage(key))?`<small>${s.pct}%</small>`:''}${ev?'<i class="evd"></i>':''}</button>`;
   }
   document.getElementById('mgrid').innerHTML=h;
   document.getElementById('mday').innerHTML=`<div class="legend" style="flex-wrap:wrap;gap:12px">
@@ -1138,10 +1147,11 @@ function renderStat(){
   });
   document.getElementById('stat').innerHTML=h;
 }
+function horsComptage(d){const f=S.settings.statsFrom;return !!(f&&d<f);}
 function strip(i,days){
   return `<div class="strip">`+days.map(d=>{
+    if(d>today()||horsComptage(d))return `<i class="sq"></i>`;
     if(paused(i,d))return `<i class="sq p"></i>`;
-    if(d>today())return `<i class="sq g"></i>`;
     if(!applies(i,d))return `<i class="sq"></i>`;
     const st=i.type==='bad'?(isDone(i.id,d)?1:2):state(i.id,d);
     return `<i class="sq ${st===1?'v':st===2?'r':'g'}"></i>`;}).join('')+`</div>`;
@@ -1202,7 +1212,7 @@ function renderDetail(){
 
   const days=[];{let d=new Date(first);
     while(iso(d)<=iso(last)){days.push(iso(d));d.setDate(d.getDate()+1);}}
-  const rel=days.filter(d=>applies(i,d)&&d<=today());
+  const rel=days.filter(d=>applies(i,d)&&d<=today()&&!horsComptage(d));
   const done=rel.filter(d=>isDone(i.id,d)).length;
   const pct=rel.length?Math.round(done/rel.length*100):0;
   const nbPause=days.filter(d=>paused(i,d)&&d<=today()).length;
@@ -1213,7 +1223,7 @@ function renderDetail(){
     for(let k=0;k<7;k++){
       const dt=new Date(start);dt.setDate(start.getDate()+w*7+k);
       const key=iso(dt);
-      if(key>today()||key<iso(first)||key>iso(last))col.push('');
+      if(key>today()||key<iso(first)||key>iso(last)||horsComptage(key))col.push('');
       else if(paused(i,key))col.push('p');
       else if(!applies(i,key))col.push('');
       else{const st=i.type==='bad'?(isDone(i.id,key)?1:2):state(i.id,key);
@@ -1279,18 +1289,23 @@ function renderGoals(){
     <p style="color:var(--dim)">Aujourd'hui : ${pj===null?'<b>rien de tranché</b>':`<b style="color:rgb(${pal.c})">${pj} % · ${pal.n}</b>`}</p>
     <p style="color:var(--dim)"><b style="color:${ec>=S.settings.seuil?'var(--rouge)':'var(--marbre)'}">${ec} écart${ec>1?'s':''}</b> sur ${S.settings.window} jours · seuil ${S.settings.seuil}.</p></div></div>`;
 
+  const seg=[...BAREME].reverse();
+  const larg=[60,10,10,20];
   h+=`<div class="block"><h3>Le barème</h3>
-    <div class="empty">Ton pourcentage du jour te place sur un palier. Novice, Régulier et Boss comptent tous dans la série : seule la couleur change. En dessous de 60 %, la journée ne compte pas et la série repart de zéro.</div>
-    ${BAREME.map(x=>`<div class="bar-row" style="border-color:rgba(${x.c},.45)">
-      <span class="bpill" style="background:rgba(${x.c},.16);color:rgb(${x.c})">${x.n}</span>
-      <span class="bseuil" style="color:rgb(${x.c})">${x.v?'≥ '+x.v+' %':'< 60 %'}</span>
-      <span class="bdesc">${x.d}</span></div>`).join('')}</div>
+    <div class="bjauge">${seg.map((x,k)=>`<button class="bseg${palOpen===x.n?' sel':''}${pal&&pal.n===x.n?' now':''}"
+      data-bar="${x.n}" style="flex:${larg[k]};background:rgba(${x.c},.28);color:rgb(${x.c})">
+      <span>${x.n}</span></button>`).join('')}</div>
+    <div class="bech">${seg.map((x,k)=>`<span style="flex:${larg[k]}">${x.v?x.v+'%':'0'}</span>`).join('')}<span style="flex:0 0 26px;text-align:right">100</span></div>
+    ${palOpen?(()=>{const x=BAREME.find(y=>y.n===palOpen);
+      return `<div class="bexp" style="border-color:rgba(${x.c},.5)">
+        <b style="color:rgb(${x.c})">${x.n} · ${x.v?'≥ '+x.v+' %':'moins de 60 %'}</b>${x.d}</div>`;})()
+      :`<div class="empty" style="margin-top:10px">Touche un palier pour son explication. Novice, Régulier et Boss comptent tous dans la série : seule la couleur change.</div>`}</div>
 
   <div class="block"><h3>${MON[new Date().getMonth()]} au jour le jour</h3>
     <div class="empty">Chaque carré porte la couleur du palier atteint ce jour-là.</div>
     <div class="palgrid">${monthDays().map(d=>{
       const sc=dayScore(d);
-      if(d>today())return `<i class="pcell"></i>`;
+      if(d>today()||horsComptage(d))return `<i class="pcell"></i>`;
       if(inGPause(d))return `<i class="pcell pz" title="${d}"></i>`;
       if(sc.pct===null)return `<i class="pcell" title="${d}"></i>`;
       const pa=palier(sc.pct);
@@ -1581,6 +1596,8 @@ function formItem(type,editId){
     if(rec&&!days.length){toast('Choisis au moins un jour');return;}
     const det=document.getElementById('f-det').value.trim();
     if(ed){
+      const oldName=ed.name;
+      if(oldName!==n)S.library=(S.library||[]).filter(x=>!(x.name===oldName&&x.type===type));
       ed.name=n;ed.detail=det;ed.recurrent=rec;
       ed.days=rec?days.slice():null;
       ed.date=rec?null:document.getElementById('f-date').value;
@@ -1954,7 +1971,7 @@ function reportMonth(dd){
 
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='3.3';
+const VERSION='3.5';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -2008,7 +2025,11 @@ function renderSet(){
   h+=`</div>
 
   <div class="block"><h3>Familles</h3>
-    <div class="empty">Les axes qui regroupent tes lignes dans les statistiques.</div>`;
+    <div class="acc pan ${setFamOpen?'open':''}">
+      <button class="acchead" id="famacc"><span class="t">Gérer les familles</span>
+        <span class="meta">${(S.families||[]).length}</span><span class="c">›</span></button>
+      <div class="accbody">
+      <p class="rule">Les axes qui regroupent tes lignes dans les statistiques.</p>`;
   (S.families||[]).forEach(f=>{
     const n=S.items.filter(i=>i.fam===f.id).length;
     h+=`<div class="item pan"><div class="head">
@@ -2017,7 +2038,7 @@ function renderSet(){
       <button class="del" data-renfam="${f.id}" style="padding:0 6px;font-size:13px">renommer</button>
       <button class="del" data-delfam="${f.id}" style="padding:0 4px;font-size:17px">×</button></div></div>`;});
   if(!(S.families||[]).length)h+=`<div class="empty">Aucune famille pour l'instant. Tu en crées depuis le formulaire d'une habit, bouton « + Nouvelle ».</div>`;
-  h+=`</div>
+  h+=`</div></div></div>
 
   <div class="block"><h3>Repartir à zéro</h3>
     <div class="empty">Remet les compteurs à zéro sans rien effacer. L'historique reste consultable dans le calendrier.</div>
@@ -2035,6 +2056,8 @@ function renderSet(){
     <div class="mrow"><span>Version</span><span class="pct">SurH40 ${VERSION}</span></div>
     <div class="mrow"><span>Mode hors ligne</span><span class="pct">${('serviceWorker' in navigator)?'disponible':'non supporté'}</span></div></div>`;
   document.getElementById('set').innerHTML=h;
+  const fa=document.getElementById('famacc');
+  if(fa)fa.onclick=()=>{setFamOpen=!setFamOpen;renderSet();};
   document.getElementById('rtog').onclick=async()=>{
     const on=!(S.settings.rappels.on);
     if(on&&'Notification' in window){
@@ -2087,15 +2110,31 @@ function wizReset(step,per){
     return;
   }
   if(step===2){
-    sheetOpen(`<h3>Période à supprimer</h3>
+    sheetOpen(`<h3>Que faut-il effacer ?</h3>
       <p style="color:var(--dim);font-weight:300;font-size:14.5px;margin:-10px 0 16px">
-      Seules ces journées seront effacées. Tout ce qui est en dehors reste intact.</p>
-      <div class="two"><div><label>Du</label><input type="date" id="w-from" value="${shift(new Date(),-30)}"></div>
-        <div><label>Au</label><input type="date" id="w-to" value="${today()}"></div></div>
+      Seules les données du quotidien partent : cases cochées, cheats, bilans, repas, pauses.
+      Tes habits, familles, objectifs, agenda et outils restent intacts.</p>
+      <div class="choice" style="margin-bottom:16px">
+        <button id="w-all" class="${per.all?'sel':''}">Tout l'historique</button>
+        <button id="w-per" class="${per.all?'':'sel'}">Une période</button></div>
+      <div id="w-dates" style="display:${per.all?'none':'block'}">
+        <div class="two"><div><label>Du</label><input type="date" id="w-from" value="${per.from||shift(new Date(),-30)}"></div>
+          <div><label>Au</label><input type="date" id="w-to" value="${per.to||today()}"></div></div></div>
+      <div id="w-allinfo" style="display:${per.all?'block':'none'}">
+        <p class="empty">De ta première journée enregistrée (${firstDay()}) à aujourd'hui.</p></div>
       <div class="btnrow"><button class="btn ghost" id="w-back">‹ Retour</button>
         <button class="btn" id="w-next">Continuer</button></div>`);
+    let all=!!per.all;
+    const ba=document.getElementById('w-all'),bp=document.getElementById('w-per');
+    ba.onclick=()=>{all=true;ba.classList.add('sel');bp.classList.remove('sel');
+      document.getElementById('w-dates').style.display='none';
+      document.getElementById('w-allinfo').style.display='block';};
+    bp.onclick=()=>{all=false;bp.classList.add('sel');ba.classList.remove('sel');
+      document.getElementById('w-dates').style.display='block';
+      document.getElementById('w-allinfo').style.display='none';};
     document.getElementById('w-back').onclick=()=>wizReset(1);
     document.getElementById('w-next').onclick=()=>{
+      if(all)return wizReset(3,{del:true,all:true,from:firstDay(),to:today()});
       const from=document.getElementById('w-from').value,to=document.getElementById('w-to').value;
       if(!from||!to||from>to){toast('Période invalide');return;}
       wizReset(3,{del:true,from,to});};
@@ -2104,8 +2143,10 @@ function wizReset(step,per){
   const n=per.del?Object.keys(S.log||{}).filter(d=>d>=per.from&&d<=per.to).length:0;
   sheetOpen(`<h3>Confirmer</h3>
     <div class="mrow"><span>Compteurs remis à zéro</span><span class="pct">oui, à partir d'aujourd'hui</span></div>
-    <div class="mrow"><span>Historique supprimé</span><span class="pct">${per.del?`${per.from} → ${per.to}`:'non'}</span></div>
-    ${per.del?`<div class="mrow"><span>Journées concernées</span><span class="pct">${n}</span></div>`:''}
+    <div class="mrow"><span>Historique supprimé</span><span class="pct">${per.del?(per.all?"tout l'historique":`${per.from} → ${per.to}`):'non'}</span></div>
+    ${per.del?`<div class="mrow"><span>Journées concernées</span><span class="pct">${n}</span></div>
+      <div class="mrow"><span>Cheats, bilans, repas, pauses</span><span class="pct">effacés</span></div>
+      <div class="mrow"><span>Habits, familles, agenda, outils</span><span class="pct">conservés</span></div>`:''}
     <p class="empty" style="margin-top:12px">${per.del?'Cette suppression est définitive. Exporte une sauvegarde si tu hésites.':'Aucune donnée ne sera perdue.'}</p>
     <div class="btnrow"><button class="btn ghost" id="w-back">‹ Retour</button>
       <button class="btn" id="w-go">Valider</button></div>`);
@@ -2116,6 +2157,9 @@ function wizReset(step,per){
       Object.keys(S.cheats).forEach(d=>{if(d>=per.from&&d<=per.to)delete S.cheats[d];});
       Object.keys(S.journal).forEach(d=>{if(d>=per.from&&d<=per.to)delete S.journal[d];});
       Object.keys(S.meals).forEach(d=>{const k=d.split('|')[0];if(k>=per.from&&k<=per.to)delete S.meals[d];});
+      const chevauche=p=>!((p.to&&p.to<per.from)||p.from>per.to);
+      S.items.forEach(i=>{i.pauses=(i.pauses||[]).filter(p=>!chevauche(p));});
+      S.gpauses=(S.gpauses||[]).filter(p=>!chevauche(p));
     }
     S.settings.statsFrom=today();S.settings.ecartsFrom=shift(new Date(),1);S.debts=[];S.baseline=0;
     (S.rewards||[]).forEach(r=>r.claimed=false);
@@ -2256,6 +2300,7 @@ document.addEventListener('click',e=>{
     S.families=S.families.filter(f=>f.id!==d.delfam);save();render();}return;}
   if(d.wipe){if(confirm('Effacer définitivement toutes tes données ?')&&confirm('Vraiment ? Cette action est irréversible.')){
     S=JSON.parse(JSON.stringify(BLANK));save();render();toast('Tout a été effacé');}return;}
+  if(d.bar){palOpen=(palOpen===d.bar)?null:d.bar;return renderGoals();}
   if(d.addg)return formGobj();
   if(d.gdone){const o=S.gobjs.find(x=>x.id===d.gdone);
     if(o){o.done=!o.done;o.doneDate=o.done?today():null;save();renderGoals();
