@@ -391,6 +391,27 @@ span.chip{cursor:default}
 .mrow:last-child{border:0}
 
 /* objectifs */
+.duo{display:flex;gap:9px;margin-bottom:18px}
+.duocard{flex:1;padding:16px 10px;display:flex;flex-direction:column;align-items:center;gap:9px}
+.duolbl{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.14em;
+  font-size:10.5px;color:var(--dim);text-align:center;line-height:1.35}
+.ecart{padding:16px}
+.ecart .n{font-family:'Cinzel',serif;font-size:20px;color:var(--or)}
+.ecexp{margin:12px 0 0;font-size:13.5px;font-weight:300;color:var(--dim)}
+.ecexp b{color:var(--marbre);font-weight:600}
+.ecpique{margin:9px 0 0;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
+  letter-spacing:.12em;font-size:12.5px;color:var(--rouge)}
+.credit{padding:15px 16px;margin-bottom:10px;border-radius:var(--r);
+  border:1px solid rgba(201,162,39,.45);background:linear-gradient(180deg,rgba(201,162,39,.13),rgba(201,162,39,.04))}
+.credit.pun{border-color:rgba(169,59,39,.5);background:linear-gradient(180deg,rgba(169,59,39,.14),rgba(169,59,39,.05))}
+.credit.late{border-color:var(--rouge)}
+.credit h4{margin:0 0 6px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
+  letter-spacing:.2em;font-size:11px;color:var(--or)}
+.credit.pun h4{color:var(--rouge)}
+.credit p{margin:0;font-size:15px;font-weight:300}
+.pick{background:rgba(201,162,39,.15);border:1px solid rgba(201,162,39,.45);border-radius:20px;
+  color:var(--or);font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.14em;
+  font-size:11px;padding:5px 12px;cursor:pointer;flex:none}
 .bjauge{display:flex;gap:2px;border-radius:var(--r);overflow:hidden;border:1px solid var(--trait)}
 .bseg{border:0;padding:13px 2px;font:inherit;cursor:pointer;min-width:0;position:relative;
   font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:11px}
@@ -568,7 +589,7 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
@@ -647,6 +668,35 @@ function suggMood(date){
   if(sc.pct>=25)return MOODS[3];
   return MOODS[4];
 }
+const REC_DEFAUT=[
+ "Une sortie que tu choisis seul, sans négociation",
+ "Une matinée entière au potager",
+ "L'équipement de boxe ou de course que tu repousses",
+ "Un massage ou une séance de récupération",
+ "Une sortie longue en pleine nature",
+ "Le livre que tu attends",
+ "Une soirée sans écran et sans obligation",
+ "Un restaurant en famille"];
+const PUN_DEFAUT=[
+ {label:"Ranger et nettoyer le garage de fond en comble",type:'organisation'},
+ {label:"Trier une pièce que tu évites depuis six mois",type:'organisation'},
+ {label:"Vider et classer entièrement la boîte mail",type:'organisation'},
+ {label:"Nettoyer la voiture, intérieur compris",type:'organisation'},
+ {label:"Marche de 20 km d'une traite",type:'sport'},
+ {label:"Une semaine de gainage quotidien",type:'sport'},
+ {label:"Course longue avant 7h du matin",type:'sport'},
+ {label:"100 pompes réparties dans la journée",type:'sport'},
+ {label:"Une semaine de repas préparés à l'avance",type:'nutrition'},
+ {label:"Sept jours sans écran après 21h",type:'nutrition'},
+ {label:"Une semaine de coucher avant 22h30",type:'nutrition'},
+ {label:"Cuisiner tous les repas de la famille pendant trois jours",type:'nutrition'}];
+const PIQUES=[
+ "Encore un et tu ranges le garage. À toi de voir.",
+ "Le compteur monte. Il ne redescend pas tout seul.",
+ "Tu joues avec la limite. Elle ne joue pas avec toi.",
+ "Un de plus et la note arrive. Sans négociation possible.",
+ "Ce n'est pas une menace, c'est un contrat. Que tu as signé."];
+const SERIE_REC=15;
 const TAUNTS=[
  "Tu tombes dans le nihilisme ou quoi ? Branleur !",
  "Trois écarts. Et tu comptais raconter quoi à tes gamins, exactement ?",
@@ -800,16 +850,22 @@ function ecartsWindow(){
   if(from)l=l.filter(d=>d>=from);
   return l.reduce((a,d)=>a+ecartsOn(d),0);
 }
-function openDebt(){return S.debts.find(d=>!d.done);}
+function openDebt(){return (S.awards||[]).find(a=>a.kind==='pun'&&!a.done);}
+function openRec(){return (S.awards||[]).find(a=>a.kind==='rec'&&!a.done);}
+function seedPools(){
+  if(!(S.recPool||[]).length)S.recPool=REC_DEFAUT.map(l=>({id:uid(),label:l}));
+  if(!(S.punPool||[]).length)S.punPool=PUN_DEFAUT.map(x=>({id:uid(),label:x.label,type:x.type}));
+}
+/* les points se gagnent ; c'est toi qui choisis la ligne ensuite */
 function checkDebt(){
-  if(openDebt()||!S.punitions.length)return;
+  S.credits=S.credits||{rec:0,pun:0};
+  let maj=false;
   const e=ecartsWindow();
-  if(e-(S.baseline||0)>=S.settings.seuil){
-    const p=S.punitions[Math.floor(Math.random()*S.punitions.length)];
-    S.debts.push({id:uid(),label:p.label,type:p.type,issued:today(),
-      due:shift(new Date(),S.settings.delai),done:false});
-    S.baseline=e;save();
-  }
+  if(e-(S.baseline||0)>=S.settings.seuil){S.credits.pun++;S.baseline=e;maj=true;}
+  const st=streakDays(),paliers=Math.floor(st/SERIE_REC);
+  if(paliers>(S.recGiven||0)){S.credits.rec+=paliers-(S.recGiven||0);S.recGiven=paliers;maj=true;}
+  if(paliers<(S.recGiven||0)){S.recGiven=paliers;maj=true;}
+  if(maj)save();
 }
 function seuilJ(){return SEUIL;}
 function streakDays(){
@@ -841,7 +897,15 @@ function renderHome(){
   const dd=new Date(date);
   const deb=openDebt();
   const qp=document.getElementById('quote');
-  if(deb){
+  const cr=S.credits||{rec:0,pun:0};
+  if(!deb&&(cr.pun>0||cr.rec>0)){
+    qp.className=cr.pun>0?'dette':'quote pan';
+    qp.innerHTML=cr.pun>0
+      ?`<h4>Punition à choisir</h4><p>Le seuil d'écarts est franchi. Va dans Objectifs et choisis ta ligne.</p>
+        <div class="taunt">${TAUNTS[(dd.getDate()+dd.getMonth())%TAUNTS.length]}</div>`
+      :`<p>Série de ${SERIE_REC} jours tenue. Une récompense t'attend dans Objectifs — choisis-la, tu l'as gagnée.</p>
+        <span class="src">SurH40</span>`;
+  }else if(deb){
     const late=today()>deb.due;
     const t=TAUNTS[(dd.getDate()+dd.getMonth())%TAUNTS.length];
     qp.className='dette';
@@ -1297,17 +1361,22 @@ function gobjYear(){const y=String(new Date().getFullYear());
   return (S.gobjs||[]).filter(o=>o.done&&(o.doneDate||'').slice(0,4)===y).length;}
 const NIVX={nano:{t:'Nano',d:'la semaine'},micro:{t:'Micro',d:'le mois ou le trimestre'},macro:{t:'Macro',d:"l'année"}};
 function renderGoals(){
-  const st=streakDays(),ec=ecartsWindow(),deb=openDebt();
+  seedPools();
+  const st=streakDays(),ec=ecartsWindow(),seuil=S.settings.seuil;
   const pj=dayScore(today()).pct, pal=palier(pj);
-  h=`<div class="donutwrap pan"><div class="donut">${donut(Math.min(100,st/15*100),104,'#C9A227')}
-    <div class="lbl"><b>${st}</b><span>jours</span></div></div>
-    <div class="txt"><p>Série en cours de <b>${st} jour${st>1?'s':''}</b>.</p>
-    <p style="color:var(--dim)">Record historique : <b style="color:var(--or)">${bestStreak()} jours</b>.</p>
-    <p style="color:var(--dim)">Aujourd'hui : ${pj===null?'<b>rien de tranché</b>':`<b style="color:rgb(${pal.c})">${pj} % · ${pal.n}</b>`}</p>
-    <p style="color:var(--dim)"><b style="color:${ec>=S.settings.seuil?'var(--rouge)':'var(--marbre)'}">${ec} écart${ec>1?'s':''}</b> sur ${S.settings.window} jours · seuil ${S.settings.seuil}.</p></div></div>`;
+  const cr=S.credits||{rec:0,pun:0};
 
-  const seg=[...BAREME].reverse();
-  const larg=[60,10,10,20];
+  /* deux anneaux */
+  let h=`<div class="duo">
+    <div class="pan duocard"><div class="donut">${donut(pj??0,104,pal?`rgb(${pal.c})`:null)}
+      <div class="lbl"><b style="${pal?`color:rgb(${pal.c})`:''}">${pj===null?'—':pj+'%'}</b><span>aujourd'hui</span></div></div>
+      <div class="duolbl" style="${pal?`color:rgb(${pal.c})`:''}">${pj===null?'rien de tranché':pal.n}</div></div>
+    <div class="pan duocard"><div class="donut">${donut(Math.min(100,st/SERIE_REC*100),104,'#C9A227')}
+      <div class="lbl"><b>${st}</b><span>jours</span></div></div>
+      <div class="duolbl">série · record ${bestStreak()}</div></div></div>`;
+
+  /* barème */
+  const seg=[...BAREME].reverse(), larg=[60,10,10,20];
   h+=`<div class="block"><h3>Le barème</h3>
     <div class="bjauge">${seg.map((x,k)=>`<button class="bseg${palOpen===x.n?' sel':''}${pal&&pal.n===x.n?' now':''}"
       data-bar="${x.n}" style="flex:${larg[k]};background:rgba(${x.c},.28);color:rgb(${x.c})">
@@ -1316,10 +1385,10 @@ function renderGoals(){
     ${palOpen?(()=>{const x=BAREME.find(y=>y.n===palOpen);
       return `<div class="bexp" style="border-color:rgba(${x.c},.5)">
         <b style="color:rgb(${x.c})">${x.n} · ${x.v?'≥ '+x.v+' %':'moins de 60 %'}</b>${x.d}</div>`;})()
-      :`<div class="empty" style="margin-top:10px">Touche un palier pour son explication. Novice, Régulier et Boss comptent tous dans la série : seule la couleur change.</div>`}</div>
+      :`<div class="empty" style="margin-top:10px">Touche un palier pour son explication. Novice, Régulier et Boss comptent tous dans la série.</div>`}</div>`;
 
-  <div class="block"><h3>${MON[new Date().getMonth()]} au jour le jour</h3>
-    <div class="empty">Chaque carré porte la couleur du palier atteint ce jour-là.</div>
+  /* mois au jour le jour */
+  h+=`<div class="block"><h3>${MON[new Date().getMonth()]} au jour le jour</h3>
     <div class="palgrid">${monthDays().map(d=>{
       const sc=dayScore(d);
       if(d>today()||horsComptage(d))return `<i class="pcell"></i>`;
@@ -1333,21 +1402,27 @@ function renderGoals(){
         <i class="pcell" style="background:rgba(${x.c},.6)"></i>${x.n}</span>`).join('')}
       <span style="display:inline-flex;align-items:center;gap:6px"><i class="pcell pz"></i>pause</span></div></div>`;
 
-  h+=`<div class="block"><h3>Objectifs d'habitudes</h3>
-    <div class="empty">Calculés tout seuls sur ta série. Ce sont eux qui comptent dans les stats.</div>`;
-  if(!S.rewards.length)h+=`<div class="empty">Aucun défini. Ex. : 15 jours de série → une sortie choisie.</div>`;
-  S.rewards.forEach(r=>{
-    const ready=st>=r.target;
-    h+=`<div class="goal pan"><h4>${esc(r.name)}</h4><div class="rw">${esc(r.reward)}</div>
-      <div class="bar"><i style="width:${Math.min(100,st/r.target*100)}%"></i></div>
-      <div class="prog">${Math.min(st,r.target)} / ${r.target} jours ${r.claimed?'· déjà réclamée':ready?'· à réclamer':''}</div>
-      <div class="btnrow">${ready&&!r.claimed?`<button class="btn" data-claim="${r.id}">Réclamer</button>`:''}
-      <button class="btn ghost" data-delrw="${r.id}">Supprimer</button></div></div>`;});
-  h+=`<button class="add" data-addrw="1">+ Créer une récompense</button></div>`;
+  /* écarts */
+  const rest=Math.max(0,seuil-ec);
+  h+=`<div class="block"><h3>Les écarts</h3>
+    <div class="ecart pan">
+      <div class="statline"><span class="n">${ec} / ${seuil}</span>
+        <span class="pct">sur ${S.settings.window} jours glissants</span></div>
+      <div class="bar" style="height:9px"><i class="${ec>=seuil?'low':ec>=seuil-1?'mid':''}" style="width:${Math.min(100,ec/seuil*100)}%"></i></div>
+      <p class="ecexp">Un écart, c'est un <b>CHEAT</b> que tu notes toi-même, ou un <b>Bad Habit</b> non tenu dans la journée.</p>
+      <p class="ecpique">${ec>=seuil?"Le compte y est. Une punition t'attend."
+        :rest===1?PIQUES[new Date().getDate()%PIQUES.length]
+        :`Encore ${rest} écarts avant la note. Ça laisse de la marge, pas une autorisation.`}</p></div></div>`;
 
+  /* récompenses */
+  h+=blocPoints('rec',cr.rec,S.recPool);
+  /* punitions */
+  h+=blocPoints('pun',cr.pun,S.punPool);
+
+  /* objectifs généraux */
   const go=(S.gobjs||[]);
   h+=`<div class="block"><h3>Objectifs généraux</h3>
-    <div class="empty">Objectifs de résultat, pas de cases cochées. Ils n'entrent pas dans tes pourcentages : seule leur réalisation est comptée sur l'année.</div>
+    <div class="empty">Objectifs de résultat. Ils n'entrent pas dans tes pourcentages : seule leur réalisation est comptée sur l'année.</div>
     <div class="kpis"><div class="pan"><div class="v">${gobjYear()}</div><div class="l">Réalisés<br>en ${new Date().getFullYear()}</div></div>
       <div class="pan"><div class="v">${go.filter(o=>!o.done).length}</div><div class="l">En<br>cours</div></div></div>`;
   ['nano','micro','macro'].forEach(lv=>{
@@ -1363,24 +1438,65 @@ function renderGoals(){
   });
   if(!go.length)h+=`<div class="empty">Aucun objectif général. Ex. : Nano « préparer 5 lunch box dimanche » · Micro « 12 séances ce mois » · Macro « 10 km en moins de 55 min ».</div>`;
   h+=`<button class="add" data-addg="1">+ Créer un objectif général</button></div>`;
-
-  h+=`<div class="block bad"><h3>Punitions possibles</h3>
-    <div class="empty">Au-delà de ${S.settings.seuil} écarts sur ${S.settings.window} jours, une punition est tirée au sort. Choisis des actions qui te font progresser, pas des privations.</div>`;
-  if(!S.punitions.length)h+=`<div class="empty">Liste vide. Ex. : ranger le garage · marche de 20 km · semaine sans écran le soir.</div>`;
-  S.punitions.forEach(pn=>h+=`<div class="item pan"><div class="head">
-    <span style="flex:1;font-weight:300">${esc(pn.label)}</span><span class="tag pon">${pn.type}</span>
-    <button class="del" data-delpun="${pn.id}" style="padding:0 2px;font-size:17px">×</button></div></div>`);
-  h+=`<button class="add" data-addpun="1">+ Ajouter une punition</button></div>`;
-
-  h+=`<div class="block"><h3>Dettes</h3>`;
-  if(deb)h+=`<div class="dette"><h4>En cours</h4><p>${esc(deb.label)}</p>
-    <p style="color:var(--dim);font-size:14px;margin-top:5px">Échéance : ${deb.due}</p>
-    <button class="btn" data-paydebt="${deb.id}">C'est fait</button></div>`;
-  const past=S.debts.filter(x=>x.done);
-  if(!deb&&!past.length)h+=`<div class="empty">Aucune dette. Continue.</div>`;
-  past.slice(-6).reverse().forEach(x=>h+=`<div class="mrow"><span style="color:var(--dim)">${esc(x.label)}</span><span class="pct">payée</span></div>`);
-  h+=`<p class="empty" style="margin-top:10px">Tant qu'une dette est ouverte, elle prend la place de la citation du jour. Les journées restent accessibles.</p></div>`;
   document.getElementById('goals').innerHTML=h;
+}
+
+function blocPoints(kind,credit,pool){
+  const rec=kind==='rec';
+  const en=(S.awards||[]).find(a=>a.kind===kind&&!a.done);
+  const faits=(S.awards||[]).filter(a=>a.kind===kind&&a.done);
+  let h=`<div class="block${rec?'':' bad'}"><h3>${rec?'Récompenses':'Punitions'}</h3>`;
+
+  if(credit>0&&!en){
+    h+=`<div class="credit${rec?'':' pun'}">
+      <h4>${credit} ${rec?'récompense':'punition'}${credit>1?'s':''} à choisir</h4>
+      <p>${rec?`Tu as tenu ${SERIE_REC} jours. Choisis ta ligne dans la liste : elle passera en cours.`
+        :`Le seuil d'écarts est franchi. Choisis la ligne que tu vas exécuter, dans les ${S.settings.delai} jours.`}</p></div>`;
+  }
+  if(en){
+    const late=en.due&&today()>en.due;
+    h+=`<div class="credit${rec?'':' pun'}${late?' late':''}">
+      <h4>En cours${late?' · en retard':''}</h4><p>${esc(en.label)}</p>
+      ${en.due?`<p class="sub" style="margin-top:6px">Échéance : ${en.due}</p>`:''}
+      <div class="btnrow"><button class="btn" data-adone="${en.id}">${rec?'Savourée':'Réglée'}</button>
+        <button class="btn ghost" data-aundo="${en.id}">Changer de ligne</button></div></div>`;
+  }
+  h+=`<div class="empty">${rec?`Une récompense se gagne tous les ${SERIE_REC} jours de série.`
+      :`Une punition tombe au-delà de ${S.settings.seuil} écarts sur ${S.settings.window} jours. Choisis des actions qui te font progresser, jamais des privations.`}</div>`;
+  pool.forEach(x=>{
+    const dispo=credit>0&&!en;
+    h+=`<div class="item pan"><div class="head">
+      <span style="flex:1;font-weight:300">${esc(x.label)}</span>
+      ${x.type?`<span class="tag pon">${x.type}</span>`:''}
+      ${dispo?`<button class="pick" data-pick="${kind}|${x.id}">Choisir</button>`:''}
+      <button class="del" data-delpool="${kind}|${x.id}" style="padding:0 4px;font-size:17px">×</button></div></div>`;});
+  h+=`<button class="add" data-addpool="${kind}">+ Ajouter ${rec?'une récompense':'une punition'}</button>`;
+  if(faits.length){
+    h+=`<div class="sub" style="margin:16px 0 7px">${rec?'Déjà savourées':'Déjà réglées'} · ${faits.length}</div>`;
+    faits.slice(-8).reverse().forEach(a=>h+=`<div class="mrow"><span style="color:var(--dim)">${esc(a.label)}</span>
+      <span class="pct">${a.doneDate||''}</span></div>`);
+  }
+  return h+`</div>`;
+}
+function formPool(kind){
+  const rec=kind==='rec';
+  sheetOpen(`<h3>${rec?'Nouvelle récompense':'Nouvelle punition'}</h3>
+    <label>Quoi</label><input type="text" id="f-name" autocomplete="off"
+      placeholder="${rec?'Une sortie que je choisis seul':'Ranger le garage'}">
+    ${rec?'':`<label>Type</label><div class="choice">
+      <button data-t="organisation" class="sel">Organisation</button>
+      <button data-t="nutrition">Nutrition</button><button data-t="sport">Sport</button></div>`}
+    <div class="btnrow"><button class="btn" id="f-ok">Ajouter</button>
+      <button class="btn ghost" id="f-no">Annuler</button></div>`);
+  let t='organisation';
+  document.querySelectorAll('.sheetbox .choice button').forEach(b=>b.onclick=()=>{
+    t=b.dataset.t;document.querySelectorAll('.sheetbox .choice button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');});
+  document.getElementById('f-no').onclick=sheetClose;
+  document.getElementById('f-ok').onclick=()=>{
+    const n=document.getElementById('f-name').value.trim();if(!n){toast('Il manque le texte');return;}
+    (kind==='rec'?S.recPool:S.punPool).push(kind==='rec'?{id:uid(),label:n}:{id:uid(),label:n,type:t});
+    save();sheetClose();renderGoals();toast('Ajouté');};
+  focusFirst();
 }
 function formGobj(){
   sheetOpen(`<h3>Nouvel objectif général</h3>
@@ -1988,7 +2104,7 @@ function reportMonth(dd){
 
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='3.7';
+const VERSION='3.8';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -2178,8 +2294,8 @@ function wizReset(step,per){
       S.items.forEach(i=>{i.pauses=(i.pauses||[]).filter(p=>!chevauche(p));});
       S.gpauses=(S.gpauses||[]).filter(p=>!chevauche(p));
     }
-    S.settings.statsFrom=today();S.settings.ecartsFrom=shift(new Date(),1);S.debts=[];S.baseline=0;
-    (S.rewards||[]).forEach(r=>r.claimed=false);
+    S.settings.statsFrom=today();S.settings.ecartsFrom=shift(new Date(),1);
+    S.debts=[];S.baseline=0;S.awards=[];S.credits={rec:0,pun:0};S.recGiven=0;
     save();sheetClose();render();toast('Nouveau départ');};
 }
 function stamp(){
@@ -2318,6 +2434,25 @@ document.addEventListener('click',e=>{
   if(d.wipe){if(confirm('Effacer définitivement toutes tes données ?')&&confirm('Vraiment ? Cette action est irréversible.')){
     S=JSON.parse(JSON.stringify(BLANK));save();render();toast('Tout a été effacé');}return;}
   if(d.bar){palOpen=(palOpen===d.bar)?null:d.bar;return renderGoals();}
+  if(d.pick){const[k,id]=d.pick.split('|');
+    const pool=k==='rec'?S.recPool:S.punPool;
+    const x=pool.find(y=>y.id===id);if(!x)return;
+    S.awards=S.awards||[];
+    S.awards.push({id:uid(),kind:k,label:x.label,type:x.type||null,earned:today(),
+      due:k==='pun'?shift(new Date(),S.settings.delai):null,done:false});
+    S.credits[k]=Math.max(0,(S.credits[k]||0)-1);
+    save();render();toast(k==='rec'?'Récompense choisie':'Punition choisie');return;}
+  if(d.aundo){const a=(S.awards||[]).find(x=>x.id===d.aundo);
+    if(a){S.credits[a.kind]=(S.credits[a.kind]||0)+1;
+      S.awards=S.awards.filter(x=>x.id!==d.aundo);save();render();toast('Choix annulé');}return;}
+  if(d.adone){const a=(S.awards||[]).find(x=>x.id===d.adone);
+    if(a){a.done=true;a.doneDate=today();save();render();
+      toast(a.kind==='rec'?'Bien méritée':'Dette réglée');}return;}
+  if(d.addpool)return formPool(d.addpool);
+  if(d.delpool){const[k,id]=d.delpool.split('|');
+    if(k==='rec')S.recPool=S.recPool.filter(x=>x.id!==id);
+    else S.punPool=S.punPool.filter(x=>x.id!==id);
+    save();renderGoals();return;}
   if(d.addg)return formGobj();
   if(d.gdone){const o=S.gobjs.find(x=>x.id===d.gdone);
     if(o){o.done=!o.done;o.doneDate=o.done?today():null;save();renderGoals();
@@ -2328,8 +2463,8 @@ document.addEventListener('click',e=>{
   if(d.delrw){S.rewards=S.rewards.filter(r=>r.id!==d.delrw);save();return renderGoals();}
   if(d.delpun){S.punitions=S.punitions.filter(p=>p.id!==d.delpun);save();return renderGoals();}
   if(d.claim){const r=S.rewards.find(x=>x.id===d.claim);if(r){r.claimed=true;save();renderGoals();toast('Récompense méritée');}return;}
-  if(d.paydebt){const dd=S.debts.find(x=>x.id===d.paydebt);if(dd){dd.done=true;dd.doneDate=today();
-    S.baseline=ecartsWindow();save();render();toast('Dette réglée');}return;}
+  if(d.paydebt){const a=(S.awards||[]).find(x=>x.id===d.paydebt);
+    if(a){a.done=true;a.doneDate=today();save();render();toast('Dette réglée');}return;}
 });
 /* ---- retour : geste de balayage + bouton physique ---- */
 window.addEventListener('popstate',e=>{
