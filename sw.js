@@ -1,4 +1,4 @@
-const CACHE='surh40-v3.6';
+const CACHE='surh40-v3.7';
 const ASSETS=['./','./index.html','./manifest.webmanifest',
   './icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 self.addEventListener('install',e=>{
