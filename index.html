@@ -597,6 +597,7 @@ const openFam=new Set();
 let lastTap={k:null,t:0};
 let setFamOpen=false;
 let palOpen=null;
+const openPool=new Set();
 let view='home',moment='matin',detailId=null,badOpen=false,badStatOpen=false,openTool=null;
 const openDet=new Set();
 
@@ -1461,20 +1462,30 @@ function blocPoints(kind,credit,pool){
       <div class="btnrow"><button class="btn" data-adone="${en.id}">${rec?'Savourée':'Réglée'}</button>
         <button class="btn ghost" data-aundo="${en.id}">Changer de ligne</button></div></div>`;
   }
-  h+=`<div class="empty">${rec?`Une récompense se gagne tous les ${SERIE_REC} jours de série.`
-      :`Une punition tombe au-delà de ${S.settings.seuil} écarts sur ${S.settings.window} jours. Choisis des actions qui te font progresser, jamais des privations.`}</div>`;
+  const dispo=credit>0&&!en;
+  const opP=openPool.has(kind)||dispo;
+  h+=`<div class="acc pan ${opP?'open':''}">
+    <button class="acchead" data-pool="${kind}"><span class="t">${rec?'Catalogue des récompenses':'Catalogue des punitions'}</span>
+      <span class="meta">${pool.length}</span><span class="c">›</span></button>
+    <div class="accbody">
+      <p class="rule">${rec?`Une récompense se gagne tous les ${SERIE_REC} jours de série.`
+        :`Une punition tombe au-delà de ${S.settings.seuil} écarts sur ${S.settings.window} jours. Choisis des actions qui te font progresser, jamais des privations.`}</p>`;
   pool.forEach(x=>{
-    const dispo=credit>0&&!en;
     h+=`<div class="item pan"><div class="head">
       <span style="flex:1;font-weight:300">${esc(x.label)}</span>
       ${x.type?`<span class="tag pon">${x.type}</span>`:''}
       ${dispo?`<button class="pick" data-pick="${kind}|${x.id}">Choisir</button>`:''}
       <button class="del" data-delpool="${kind}|${x.id}" style="padding:0 4px;font-size:17px">×</button></div></div>`;});
-  h+=`<button class="add" data-addpool="${kind}">+ Ajouter ${rec?'une récompense':'une punition'}</button>`;
+  h+=`<button class="add" data-addpool="${kind}">+ Ajouter ${rec?'une récompense':'une punition'}</button>
+    </div></div>`;
   if(faits.length){
-    h+=`<div class="sub" style="margin:16px 0 7px">${rec?'Déjà savourées':'Déjà réglées'} · ${faits.length}</div>`;
-    faits.slice(-8).reverse().forEach(a=>h+=`<div class="mrow"><span style="color:var(--dim)">${esc(a.label)}</span>
-      <span class="pct">${a.doneDate||''}</span></div>`);
+    const opH=openPool.has('h'+kind);
+    h+=`<div class="acc pan ${opH?'open':''}">
+      <button class="acchead" data-pool="h${kind}"><span class="t">${rec?'Déjà savourées':'Déjà réglées'}</span>
+        <span class="meta">${faits.length}</span><span class="c">›</span></button>
+      <div class="accbody">`+
+      faits.slice(-12).reverse().map(a=>`<div class="mrow"><span style="color:var(--dim)">${esc(a.label)}</span>
+        <span class="pct">${a.doneDate||''}</span></div>`).join('')+`</div></div>`;
   }
   return h+`</div>`;
 }
@@ -2104,7 +2115,7 @@ function reportMonth(dd){
 
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='3.8';
+const VERSION='3.9';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -2434,6 +2445,7 @@ document.addEventListener('click',e=>{
   if(d.wipe){if(confirm('Effacer définitivement toutes tes données ?')&&confirm('Vraiment ? Cette action est irréversible.')){
     S=JSON.parse(JSON.stringify(BLANK));save();render();toast('Tout a été effacé');}return;}
   if(d.bar){palOpen=(palOpen===d.bar)?null:d.bar;return renderGoals();}
+  if(d.pool){if(openPool.has(d.pool))openPool.delete(d.pool);else openPool.add(d.pool);return renderGoals();}
   if(d.pick){const[k,id]=d.pick.split('|');
     const pool=k==='rec'?S.recPool:S.punPool;
     const x=pool.find(y=>y.id===id);if(!x)return;
