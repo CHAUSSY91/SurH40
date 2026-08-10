@@ -109,6 +109,9 @@ header{padding:30px 20px 0;text-align:center;position:relative}
 .recall h4{margin:0 0 8px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
   letter-spacing:.22em;font-size:10.5px;color:var(--olive)}
 .recall div{font-size:15.5px;padding:2px 0;font-weight:300}
+.recall .rl.fait{color:var(--vert)}
+.recall .rl.fait .rt{text-decoration:line-through;text-decoration-color:rgba(123,166,92,.7);color:var(--dim)}
+.recall .rl.rate .rt{text-decoration:line-through;text-decoration-color:rgba(169,59,39,.7);color:var(--dim)}
 
 /* ---------- lignes / lances ---------- */
 .rows{display:flex;flex-direction:column;gap:7px}
@@ -609,7 +612,7 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
@@ -991,7 +994,9 @@ function renderHome(){
   document.getElementById('recall').innerHTML=(evs.length||pon.length)?
     `<div class="recall pan"><h4>Prévu aujourd'hui</h4>`+
      evs.map(e=>`<div>— ${evtTime(e)?`<b style="color:var(--or)">${evtTime(e)}</b> · `:''}${esc(e.title)}</div>`).join('')+
-     pon.map(i=>`<div>— ${esc(i.name)} <span style="color:var(--olive);font-size:13px">· ${MOMENTS[i.moment].t.toLowerCase()}</span></div>`).join('')+
+     pon.map(i=>{const st=state(i.id,date);
+       return `<div class="rl ${st===1?'fait':st===2?'rate':''}">${st===1?'✓':'—'} <span class="rt">${esc(i.name)}</span>
+         <span style="color:var(--olive);font-size:13px">· ${MOMENTS[i.moment].t.toLowerCase()}</span></div>`;}).join('')+
      `</div>`:'';
 
   const rows=['matin','midi','soir'].map(m=>{
@@ -1003,7 +1008,7 @@ function renderHome(){
   rows.push(`<button class="row pan" data-go="stat"><span class="nm">Stat</span><span class="meta">3 mois</span></button>`);
   rows.push(`<button class="row pan" data-go="goals"><span class="nm">Objectifs</span><span class="meta">${streakDays()} j de série</span></button>`);
   rows.push(`<button class="row pan" data-go="notes"><span class="nm">Idées en vrac</span><span class="meta">${(S.notes||[]).length||'—'}</span></button>`);
-  rows.push(`<button class="row pan" data-go="tools"><span class="nm">Outils</span><span class="meta">${allTools().length+1} fiches</span></button>`);
+  rows.push(`<button class="row pan" data-go="tools"><span class="nm">Outils</span><span class="meta">${allTools().length+2} fiches</span></button>`);
   rows.push(`<button class="row pan" data-go="set"><span class="nm">Réglages</span><span class="meta">${S.settings.rappels&&S.settings.rappels.on?'rappels actifs':'—'}</span></button>`);
   document.getElementById('rows').innerHTML=rows.join('');
 
@@ -1618,7 +1623,8 @@ const TOOLS=[
 ];
 function allTools(){return TOOLS.concat((S.customTools||[]).map(c=>({k:c.k,t:c.t,r:c.r,custom:true})));}
 function renderTools(){
-  let h=`<div class="acc pan ${openTool==='prov'?'open':''}">
+  let h=blocPoids();
+  h+=`<div class="acc pan ${openTool==='prov'?'open':''}">
     <button class="acchead" data-tool="prov"><span class="t">Proverbes</span>
       <span class="meta">${QUOTES.length+S.proverbs.length}</span><span class="c">›</span></button>
     <div class="accbody">
@@ -2194,6 +2200,148 @@ function reportMonth(dd){
 
 
 
+
+/* ================= SUIVI DE POIDS ================= */
+function poidsData(){
+  S.poids=S.poids||{profil:null,entries:[]};
+  S.poids.entries=(S.poids.entries||[]).sort((a,b)=>a.date.localeCompare(b.date));
+  return S.poids;
+}
+function moyenneGlissante(entries,n){
+  return entries.map((e,k)=>{
+    const w=entries.slice(Math.max(0,k-n+1),k+1);
+    return {date:e.date,kg:w.reduce((a,b)=>a+b.kg,0)/w.length};
+  });
+}
+function courbePoids(entries,cible){
+  if(entries.length<2)return '';
+  const W=460,H=170,P=26;
+  const kgs=entries.map(e=>e.kg).concat(cible?[cible]:[]);
+  let min=Math.min(...kgs),max=Math.max(...kgs);
+  if(max-min<2){min-=1;max+=1;}
+  const pad=(max-min)*.12;min-=pad;max+=pad;
+  const t0=new Date(entries[0].date).getTime(),t1=new Date(entries[entries.length-1].date).getTime();
+  const X=d=>P+(W-P*2)*((new Date(d).getTime()-t0)/Math.max(1,t1-t0));
+  const Y=k=>P+(H-P*2)*(1-(k-min)/(max-min));
+  const pts=entries.map(e=>`${X(e.date).toFixed(1)},${Y(e.kg).toFixed(1)}`).join(' ');
+  const ma=moyenneGlissante(entries,7);
+  const pma=ma.map(e=>`${X(e.date).toFixed(1)},${Y(e.kg).toFixed(1)}`).join(' ');
+  const yc=cible?Y(cible):null;
+  return `<svg viewBox="0 0 ${W} ${H}" style="width:100%;height:auto;display:block">
+    ${cible?`<line x1="${P}" y1="${yc.toFixed(1)}" x2="${W-P}" y2="${yc.toFixed(1)}"
+      stroke="#C9A227" stroke-width="1" stroke-dasharray="5 4" opacity=".8"/>
+      <text x="${W-P}" y="${(yc-6).toFixed(1)}" text-anchor="end" fill="#C9A227"
+        font-family="Barlow Condensed" font-size="11">cible ${cible} kg</text>`:''}
+    <polyline points="${pts}" fill="none" stroke="rgba(237,233,220,.28)" stroke-width="1.5"/>
+    <polyline points="${pma}" fill="none" stroke="#7BA65C" stroke-width="2.5"
+      stroke-linejoin="round" stroke-linecap="round"/>
+    ${entries.map(e=>`<circle cx="${X(e.date).toFixed(1)}" cy="${Y(e.kg).toFixed(1)}" r="2.6"
+      fill="rgba(237,233,220,.5)"/>`).join('')}
+    <text x="${P}" y="${H-6}" fill="#8F8D7D" font-family="Barlow Condensed" font-size="10">${entries[0].date.slice(8)}/${entries[0].date.slice(5,7)}</text>
+    <text x="${W-P}" y="${H-6}" text-anchor="end" fill="#8F8D7D" font-family="Barlow Condensed" font-size="10">${entries[entries.length-1].date.slice(8)}/${entries[entries.length-1].date.slice(5,7)}</text>
+    <text x="${P-4}" y="${(P+4).toFixed(1)}" text-anchor="end" fill="#8F8D7D" font-family="Barlow Condensed" font-size="10">${max.toFixed(0)}</text>
+    <text x="${P-4}" y="${(H-P+4).toFixed(1)}" text-anchor="end" fill="#8F8D7D" font-family="Barlow Condensed" font-size="10">${min.toFixed(0)}</text>
+  </svg>`;
+}
+function blocPoids(){
+  const P=poidsData(),pr=P.profil,e=P.entries;
+  const op=openTool==='poids';
+  let h=`<div class="acc pan ${op?'open':''}">
+    <button class="acchead" data-tool="poids"><span class="t">Suivi de poids</span>
+      <span class="meta">${e.length?e[e.length-1].kg+' kg':'—'}</span><span class="c">›</span></button>
+    <div class="accbody">`;
+  if(!pr){
+    h+=`<p class="rule">Pose d'abord tes repères : ils servent à calculer ta progression, rien de plus.</p>
+      <button class="add" data-poidsprof="1">Renseigner mes repères</button></div></div>`;
+    return h;
+  }
+  const last=e.length?e[e.length-1]:null;
+  const first=e.length?e[0]:null;
+  const ma=e.length?moyenneGlissante(e,7):[];
+  const tend=ma.length?ma[ma.length-1].kg:null;
+  const imc=last&&pr.taille?last.kg/Math.pow(pr.taille/100,2):null;
+  const restant=last&&pr.cible?last.kg-pr.cible:null;
+  const depuis=last&&first?last.kg-first.kg:null;
+  /* rythme sur 28 jours */
+  const j28=e.filter(x=>x.date>=shift(new Date(),-28));
+  const rythme=j28.length>=2?((j28[j28.length-1].kg-j28[0].kg)/
+    Math.max(1,(new Date(j28[j28.length-1].date)-new Date(j28[0].date))/86400000)*7):null;
+
+  h+=`<div class="kpis" style="margin-bottom:12px">
+    <div class="pan"><div class="v">${last?last.kg:'—'}</div><div class="l">Dernier<br>relevé</div></div>
+    <div class="pan"><div class="v">${tend?tend.toFixed(1):'—'}</div><div class="l">Tendance<br>7 relevés</div></div>
+    <div class="pan"><div class="v" style="color:${restant===null?'var(--or)':restant<=0?'var(--vert)':'var(--or)'}">${restant===null?'—':(restant>0?restant.toFixed(1):'0')}</div><div class="l">Reste<br>à faire</div></div></div>`;
+  if(e.length>=2){
+    h+=`<div class="pan" style="padding:12px 8px;margin-bottom:12px">${courbePoids(e,pr.cible||null)}</div>
+      <div class="legend" style="margin:-4px 0 12px">
+        <i style="width:16px;height:2.5px;background:#7BA65C;display:inline-block"></i> tendance
+        <i style="width:16px;height:1.5px;background:rgba(237,233,220,.3);display:inline-block"></i> relevés</div>`;
+  }else{
+    h+=`<div class="empty">Il faut au moins deux relevés pour tracer une courbe.</div>`;
+  }
+  h+=`<div class="mrow"><span>Depuis le premier relevé</span><span class="pct" style="color:${depuis===null?'var(--dim)':depuis<0?'var(--vert)':'var(--marbre)'}">${depuis===null?'—':(depuis>0?'+':'')+depuis.toFixed(1)+' kg'}</span></div>
+    <div class="mrow"><span>Rythme sur 4 semaines</span><span class="pct">${rythme===null?'—':(rythme>0?'+':'')+rythme.toFixed(2)+' kg / semaine'}</span></div>
+    ${imc?`<div class="mrow"><span>Indice de masse corporelle</span><span class="pct">${imc.toFixed(1)}</span></div>`:''}
+    <div class="mrow"><span>Repères</span><span class="pct">${pr.age} ans · ${pr.taille} cm · cible ${pr.cible} kg
+      <button class="del" data-poidsprof="1" style="padding:0 6px;font-size:12px">modifier</button></span></div>`;
+  if(rythme!==null&&rythme<-1.2){
+    h+=`<div class="bexp" style="border-color:rgba(201,162,39,.5);margin-top:12px">
+      <b style="color:var(--or)">Rythme rapide</b>Au-delà d'un kilo par semaine, ce qui part n'est pas que de la graisse,
+      et la reprise est quasi systématique. Entre 0,5 et 1 kg par semaine, ça tient dans la durée.</div>`;
+  }
+  h+=`<button class="add" data-addpoids="1" style="margin-top:12px">+ Ajouter un relevé</button>`;
+  if(e.length){
+    h+=`<div class="sub" style="margin:16px 0 7px">Historique · ${e.length} relevés</div>`;
+    e.slice().reverse().slice(0,12).forEach(x=>{
+      const d=new Date(x.date);
+      h+=`<div class="mrow"><span>${DOW[d.getDay()]} ${d.getDate()} ${MSHORT[d.getMonth()]}</span>
+        <span class="pct">${x.kg} kg
+        <button class="del" data-delpoids="${x.date}" style="padding:0 6px;font-size:15px">×</button></span></div>`;});
+  }
+  return h+`</div></div>`;
+}
+function formPoidsProfil(){
+  const pr=(S.poids&&S.poids.profil)||{};
+  sheetOpen(`<h3>Mes repères</h3>
+    <div class="two"><div><label>Âge</label><input type="number" id="p-age" inputmode="numeric" value="${pr.age||''}"></div>
+      <div><label>Taille (cm)</label><input type="number" id="p-taille" inputmode="numeric" value="${pr.taille||''}"></div></div>
+    <div class="two"><div><label>Poids actuel (kg)</label><input type="number" step="0.1" id="p-kg" inputmode="decimal" value="${pr.kg||''}"></div>
+      <div><label>Poids cible (kg)</label><input type="number" step="0.1" id="p-cible" inputmode="decimal" value="${pr.cible||''}"></div></div>
+    <div class="btnrow"><button class="btn" id="f-ok">Enregistrer</button>
+      <button class="btn ghost" id="f-no">Annuler</button></div>`);
+  document.getElementById('f-no').onclick=sheetClose;
+  document.getElementById('f-ok').onclick=()=>{
+    const age=+document.getElementById('p-age').value,taille=+document.getElementById('p-taille').value;
+    const kg=+document.getElementById('p-kg').value,cible=+document.getElementById('p-cible').value;
+    if(!taille||!kg){toast('Taille et poids actuel sont nécessaires');return;}
+    if(cible&&taille){
+      const imcC=cible/Math.pow(taille/100,2);
+      if(imcC<18.5&&!confirm("Cette cible correspond à un IMC inférieur à 18,5, soit sous le seuil de maigreur. Tu veux vraiment la garder ?"))return;
+    }
+    S.poids=S.poids||{profil:null,entries:[]};
+    S.poids.profil={age,taille,kg,cible};
+    if(!(S.poids.entries||[]).length)S.poids.entries=[{date:today(),kg}];
+    openTool='poids';save();sheetClose();renderTools();toast('Repères enregistrés');};
+  setTimeout(()=>{const f=document.getElementById('p-age');if(f)f.focus();},90);
+}
+function formPoids(){
+  sheetOpen(`<h3>Nouveau relevé</h3>
+    <div class="two"><div><label>Date</label><input type="date" id="p-date" value="${today()}"></div>
+      <div><label>Poids (kg)</label><input type="number" step="0.1" id="p-kg" inputmode="decimal"></div></div>
+    <p class="empty">Pèse-toi toujours dans les mêmes conditions : le matin, à jeun. Les variations d'un jour à l'autre ne veulent rien dire, c'est la tendance qui compte.</p>
+    <div class="btnrow"><button class="btn" id="f-ok">Enregistrer</button>
+      <button class="btn ghost" id="f-no">Annuler</button></div>`);
+  document.getElementById('f-no').onclick=sheetClose;
+  document.getElementById('f-ok').onclick=()=>{
+    const kg=+document.getElementById('p-kg').value,d=document.getElementById('p-date').value||today();
+    if(!kg){toast('Il manque le poids');return;}
+    S.poids=S.poids||{profil:null,entries:[]};
+    S.poids.entries=(S.poids.entries||[]).filter(x=>x.date!==d);
+    S.poids.entries.push({date:d,kg});
+    save();sheetClose();renderTools();toast('Relevé enregistré');};
+  setTimeout(()=>{const f=document.getElementById('p-kg');if(f)f.focus();},90);
+}
+
 /* ================= IDÉES EN VRAC ================= */
 function renderNotes(){
   const l=(S.notes||[]);
@@ -2271,7 +2419,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='4.1';
+const VERSION='4.3';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -2622,6 +2770,9 @@ document.addEventListener('click',e=>{
     if(k==='rec')S.recPool=S.recPool.filter(x=>x.id!==id);
     else S.punPool=S.punPool.filter(x=>x.id!==id);
     save();renderGoals();return;}
+  if(d.poidsprof)return formPoidsProfil();
+  if(d.addpoids)return formPoids();
+  if(d.delpoids){S.poids.entries=S.poids.entries.filter(x=>x.date!==d.delpoids);save();renderTools();return;}
   if(d.addnote)return formNote();
   if(d.editnote)return formNote(d.editnote);
   if(d.delnote){if(confirm('Supprimer cette idée ?')){
