@@ -396,6 +396,19 @@ span.chip{cursor:default}
 .duolbl{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.14em;
   font-size:10.5px;color:var(--dim);text-align:center;line-height:1.35}
 .ecart{padding:16px}
+.ecprop{margin:10px 0 0;font-size:13px;font-weight:300;color:var(--dim)}
+.ecprop b{color:var(--or);font-weight:600}
+.note{padding:15px 16px;margin-bottom:9px}
+.note p{margin:0;font-size:15.5px;font-weight:300;white-space:pre-wrap}
+.notemeta{font-family:'Barlow Condensed',sans-serif;font-size:10.5px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--bronze);margin-top:8px}
+.note .acts{margin-top:10px}
+.pop{padding:20px 18px;border-radius:var(--r);text-align:center;
+  border:1px solid rgba(201,162,39,.6);
+  background:radial-gradient(120% 100% at 50% 0,rgba(201,162,39,.22),rgba(201,162,39,.05))}
+.popt{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.24em;
+  font-size:11px;color:var(--or);margin-bottom:9px}
+.pop p{margin:0 0 4px;font-family:'Cinzel',serif;font-size:17px;line-height:1.45;letter-spacing:.02em}
 .ecart .n{font-family:'Cinzel',serif;font-size:20px;color:var(--or)}
 .ecexp{margin:12px 0 0;font-size:13.5px;font-weight:300;color:var(--dim)}
 .ecexp b{color:var(--marbre);font-weight:600}
@@ -558,6 +571,13 @@ footer .btn{flex:1;min-width:135px}
     <div id="tools"></div>
   </section>
 
+  <section class="screen" id="s-notes">
+    <button class="back" data-go="home">‹ Retour</button>
+    <h2 class="title">Idées en vrac</h2>
+    <p class="tagline">Ce qui te passe par la tête et que tu n'as pas encore placé. Rien ne s'efface tout seul.</p>
+    <div id="notes"></div>
+  </section>
+
   <section class="screen" id="s-set">
     <button class="back" data-go="home">‹ Retour</button>
     <h2 class="title">Réglages</h2>
@@ -589,7 +609,7 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
@@ -691,13 +711,23 @@ const PUN_DEFAUT=[
  {label:"Sept jours sans écran après 21h",type:'nutrition'},
  {label:"Une semaine de coucher avant 22h30",type:'nutrition'},
  {label:"Cuisiner tous les repas de la famille pendant trois jours",type:'nutrition'}];
+const REC_POP=[
+ "Un week-end seul en pleine nature, deux jours sans rendre de comptes",
+ "Le sac de frappe et les gants que tu regardes depuis deux ans",
+ "Une vraie paire de chaussures de running, choisie en magasin spécialisé",
+ "Un stage ou une session de boxe avec un coach",
+ "Un dîner gastronomique, juste toi et ta compagne",
+ "Un week-end en famille quelque part que tes enfants n'ont jamais vu",
+ "Le matériel de potager que tu bricoles depuis trois saisons",
+ "Une journée entière de repos total, tout le monde s'organise sans toi"];
 const PIQUES=[
  "Encore un et tu ranges le garage. À toi de voir.",
  "Le compteur monte. Il ne redescend pas tout seul.",
  "Tu joues avec la limite. Elle ne joue pas avec toi.",
  "Un de plus et la note arrive. Sans négociation possible.",
  "Ce n'est pas une menace, c'est un contrat. Que tu as signé."];
-const SERIE_REC=15;
+const SERIE_REC=7;
+const SERIE_PROPRE=15;
 const TAUNTS=[
  "Tu tombes dans le nihilisme ou quoi ? Branleur !",
  "Trois écarts. Et tu comptais raconter quoi à tes gamins, exactement ?",
@@ -840,10 +870,18 @@ function dayScore(date){let tot=0,ok=0;
   return {tot,ok,pct:tot?Math.round(ok/tot*100):null};}
 
 /* écarts = cheats notés + bad habits non cochées */
+/* une journée est "vécue" si tu as saisi quelque chose : sinon rien ne t'est reproché */
+function vecu(date){
+  if(S.log[date]&&Object.keys(S.log[date]).length)return true;
+  if((S.cheats[date]||[]).length)return true;
+  if(S.journal[date]&&(S.journal[date].good||S.journal[date].bad||S.journal[date].mood))return true;
+  return ['matin','midi','soir'].some(m=>(S.meals[date+'|'+m]||[]).length);
+}
+/* un écart par journée, quel que soit le nombre de lignes concernées */
 function ecartsOn(date){
-  let n=(S.cheats[date]||[]).length;
-  itemsFor('soir','bad',date).forEach(i=>{if(!isDone(i.id,date))n++;});
-  return n;
+  if(!vecu(date))return 0;
+  if((S.cheats[date]||[]).length)return 1;
+  return itemsFor('soir','bad',date).some(i=>!isDone(i.id,date))?1:0;
 }
 function ecartsWindow(){
   let l=lastDays(S.settings.window);
@@ -852,6 +890,17 @@ function ecartsWindow(){
   return l.reduce((a,d)=>a+ecartsOn(d),0);
 }
 function openDebt(){return (S.awards||[]).find(a=>a.kind==='pun'&&!a.done);}
+function streakPropre(){
+  let n=0;
+  for(let k=0;k<400;k++){
+    const d=shift(new Date(),-k);
+    if(!vecu(d)){if(k===0)continue;else break;}
+    if(ecartsOn(d))break;
+    n++;
+  }
+  return n;
+}
+function openPop(){return (S.awards||[]).find(a=>a.kind==='pop'&&!a.done);}
 function openRec(){return (S.awards||[]).find(a=>a.kind==='rec'&&!a.done);}
 function seedPools(){
   if(!(S.recPool||[]).length)S.recPool=REC_DEFAUT.map(l=>({id:uid(),label:l}));
@@ -866,6 +915,17 @@ function checkDebt(){
   const st=streakDays(),paliers=Math.floor(st/SERIE_REC);
   if(paliers>(S.recGiven||0)){S.credits.rec+=paliers-(S.recGiven||0);S.recGiven=paliers;maj=true;}
   if(paliers<(S.recGiven||0)){S.recGiven=paliers;maj=true;}
+  /* la série propre : 15 jours vécus sans le moindre écart */
+  const sp=streakPropre(),pp=Math.floor(sp/SERIE_PROPRE);
+  if(pp>(S.popGiven||0)){
+    for(let k=0;k<pp-(S.popGiven||0);k++){
+      const l=REC_POP[Math.floor(Math.random()*REC_POP.length)];
+      S.awards=S.awards||[];
+      S.awards.push({id:uid(),kind:'pop',label:l,earned:today(),due:null,done:false});
+    }
+    S.popGiven=pp;maj=true;
+  }
+  if(pp<(S.popGiven||0)){S.popGiven=pp;maj=true;}
   if(maj)save();
 }
 function seuilJ(){return SEUIL;}
@@ -899,7 +959,12 @@ function renderHome(){
   const deb=openDebt();
   const qp=document.getElementById('quote');
   const cr=S.credits||{rec:0,pun:0};
-  if(!deb&&(cr.pun>0||cr.rec>0)){
+  const popA=openPop();
+  if(popA){
+    qp.className='quote pan';
+    qp.innerHTML=`<p><b style="color:var(--or)">${SERIE_PROPRE} jours sans un seul écart.</b><br>${esc(popA.label)}</p>
+      <span class="src">Récompense d'exception · elle t'attend dans Objectifs</span>`;
+  }else if(!deb&&(cr.pun>0||cr.rec>0)){
     qp.className=cr.pun>0?'dette':'quote pan';
     qp.innerHTML=cr.pun>0
       ?`<h4>Punition à choisir</h4><p>Le seuil d'écarts est franchi. Va dans Objectifs et choisis ta ligne.</p>
@@ -937,6 +1002,7 @@ function renderHome(){
   rows.push(`<button class="row pan" data-go="cal"><span class="nm">Calendrier</span><span class="meta">${MON[cursor.getMonth()].slice(0,3).toLowerCase()} · ${mp===null?'—':mp+'%'}</span></button>`);
   rows.push(`<button class="row pan" data-go="stat"><span class="nm">Stat</span><span class="meta">3 mois</span></button>`);
   rows.push(`<button class="row pan" data-go="goals"><span class="nm">Objectifs</span><span class="meta">${streakDays()} j de série</span></button>`);
+  rows.push(`<button class="row pan" data-go="notes"><span class="nm">Idées en vrac</span><span class="meta">${(S.notes||[]).length||'—'}</span></button>`);
   rows.push(`<button class="row pan" data-go="tools"><span class="nm">Outils</span><span class="meta">${allTools().length+1} fiches</span></button>`);
   rows.push(`<button class="row pan" data-go="set"><span class="nm">Réglages</span><span class="meta">${S.settings.rappels&&S.settings.rappels.on?'rappels actifs':'—'}</span></button>`);
   document.getElementById('rows').innerHTML=rows.join('');
@@ -1363,7 +1429,7 @@ function gobjYear(){const y=String(new Date().getFullYear());
 const NIVX={nano:{t:'Nano',d:'la semaine'},micro:{t:'Micro',d:'le mois ou le trimestre'},macro:{t:'Macro',d:"l'année"}};
 function renderGoals(){
   seedPools();
-  const st=streakDays(),ec=ecartsWindow(),seuil=S.settings.seuil;
+  const st=streakDays(),ec=ecartsWindow();
   const pj=dayScore(today()).pct, pal=palier(pj);
   const cr=S.credits||{rec:0,pun:0};
 
@@ -1403,20 +1469,33 @@ function renderGoals(){
         <i class="pcell" style="background:rgba(${x.c},.6)"></i>${x.n}</span>`).join('')}
       <span style="display:inline-flex;align-items:center;gap:6px"><i class="pcell pz"></i>pause</span></div></div>`;
 
-  /* écarts */
-  const rest=Math.max(0,seuil-ec);
-  h+=`<div class="block"><h3>Les écarts</h3>
-    <div class="ecart pan">
-      <div class="statline"><span class="n">${ec} / ${seuil}</span>
-        <span class="pct">sur ${S.settings.window} jours glissants</span></div>
-      <div class="bar" style="height:9px"><i class="${ec>=seuil?'low':ec>=seuil-1?'mid':''}" style="width:${Math.min(100,ec/seuil*100)}%"></i></div>
-      <p class="ecexp">Un écart, c'est un <b>CHEAT</b> que tu notes toi-même, ou un <b>Bad Habit</b> non tenu dans la journée.</p>
-      <p class="ecpique">${ec>=seuil?"Le compte y est. Une punition t'attend."
-        :rest===1?PIQUES[new Date().getDate()%PIQUES.length]
-        :`Encore ${rest} écarts avant la note. Ça laisse de la marge, pas une autorisation.`}</p></div></div>`;
+  /* récompense d'exception : elle surgit, on ne la choisit pas */
+  const pop=openPop();
+  const sp=streakPropre();
+  if(pop){
+    h+=`<div class="block"><h3>Récompense d'exception</h3>
+      <div class="pop"><div class="popt">${SERIE_PROPRE} jours sans le moindre écart</div>
+        <p>${esc(pop.label)}</p>
+        <div class="btnrow"><button class="btn" data-adone="${pop.id}">Je me la suis offerte</button></div></div></div>`;
+  }
 
   /* récompenses */
   h+=blocPoints('rec',cr.rec,S.recPool);
+
+  /* écarts, juste avant les punitions */
+  const rest=Math.max(0,S.settings.seuil-ec);
+  h+=`<div class="block"><h3>Les écarts</h3>
+    <div class="ecart pan">
+      <div class="statline"><span class="n">${ec} / ${S.settings.seuil}</span>
+        <span class="pct">sur ${S.settings.window} jours glissants</span></div>
+      <div class="bar" style="height:9px"><i class="${ec>=S.settings.seuil?'low':ec>=S.settings.seuil-1?'mid':''}" style="width:${Math.min(100,ec/S.settings.seuil*100)}%"></i></div>
+      <p class="ecexp">Une <b>journée</b> compte pour un écart si tu y as noté un CHEAT ou laissé un Bad Habit non tenu.
+        Peu importe le nombre de lignes : c'est le jour qui compte. Une journée où tu n'as rien saisi ne compte pas.</p>
+      <p class="ecpique">${ec>=S.settings.seuil?"Le compte y est. Une punition t'attend."
+        :rest===1?PIQUES[new Date().getDate()%PIQUES.length]
+        :`Encore ${rest} journées d'écart avant la note.`}</p>
+      <p class="ecprop">Série propre : <b>${sp} jour${sp>1?'s':''}</b> sans écart · récompense d'exception à ${SERIE_PROPRE}.</p></div></div>`;
+
   /* punitions */
   h+=blocPoints('pun',cr.pun,S.punPool);
 
@@ -1445,7 +1524,7 @@ function renderGoals(){
 function blocPoints(kind,credit,pool){
   const rec=kind==='rec';
   const en=(S.awards||[]).find(a=>a.kind===kind&&!a.done);
-  const faits=(S.awards||[]).filter(a=>a.kind===kind&&a.done);
+  const faits=(S.awards||[]).filter(a=>a.done&&(a.kind===kind||(rec&&a.kind==='pop')));
   let h=`<div class="block${rec?'':' bad'}"><h3>${rec?'Récompenses':'Punitions'}</h3>`;
 
   if(credit>0&&!en){
@@ -2114,8 +2193,85 @@ function reportMonth(dd){
 }
 
 
+
+/* ================= IDÉES EN VRAC ================= */
+function renderNotes(){
+  const l=(S.notes||[]);
+  let h=`<button class="add" data-addnote="1" style="margin-bottom:16px">+ Noter une idée</button>`;
+  if(!l.length)h+=`<div class="empty">Rien pour l'instant. Note ce qui te traverse l'esprit : tu décideras plus tard si ça devient une tâche, un rendez-vous ou rien du tout.</div>`;
+  l.slice().reverse().forEach(n=>{
+    h+=`<div class="note pan"><p>${esc(n.text)}</p>
+      <div class="notemeta">${n.date}</div>
+      <div class="acts">
+        <button data-editnote="${n.id}">Modifier</button>
+        <button data-tonote="todo|${n.id}">→ Chose à faire</button>
+        <button data-tonote="evt|${n.id}">→ Agenda</button>
+        <button class="dg" data-delnote="${n.id}">Supprimer</button></div></div>`;});
+  document.getElementById('notes').innerHTML=h;
+}
+function formNote(id){
+  const n=id?(S.notes||[]).find(x=>x.id===id):null;
+  sheetOpen(`<h3>${n?'Modifier':'Noter une idée'}</h3>
+    <label>L'idée</label><textarea id="f-name" style="min-height:110px"
+      placeholder="Racheter des gants · appeler le kiné · revoir le budget vacances">${n?esc(n.text):''}</textarea>
+    <div class="btnrow"><button class="btn" id="f-ok">${n?'Enregistrer':'Noter'}</button>
+      <button class="btn ghost" id="f-no">Annuler</button></div>`);
+  document.getElementById('f-no').onclick=sheetClose;
+  document.getElementById('f-ok').onclick=()=>{
+    const t=document.getElementById('f-name').value.trim();
+    if(!t){toast('Rien à noter');return;}
+    S.notes=S.notes||[];
+    if(n)n.text=t; else S.notes.push({id:uid(),text:t,date:today()});
+    save();sheetClose();renderNotes();renderHome();toast(n?'Modifiée':'Notée');};
+  setTimeout(()=>{const f=document.getElementById('f-name');if(f)f.focus();},90);
+}
+function convertNote(kind,id){
+  const n=(S.notes||[]).find(x=>x.id===id);if(!n)return;
+  if(kind==='todo'){
+    sheetOpen(`<h3>En faire une chose à faire</h3>
+      <p style="color:var(--dim);font-weight:300;font-size:14.5px;margin:-10px 0 16px">${esc(n.text)}</p>
+      <label>Sur quel moment</label>
+      <div class="choice">${['matin','midi','soir'].map((m,k)=>
+        `<button data-m="${m}" class="${k===0?'sel':''}">${MOMENTS[m].t}</button>`).join('')}</div>
+      <label>Quand</label>
+      <div class="choice"><button id="n-pon" class="sel">Une date</button><button id="n-rec">Tous les jours</button></div>
+      <div id="n-dw"><label>Date</label><input type="date" id="f-date" value="${today()}"></div>
+      <div class="btnrow"><button class="btn" id="f-ok">Créer</button>
+        <button class="btn ghost" id="f-no">Annuler</button></div>`);
+    let mom='matin',rec=false;
+    document.querySelectorAll('.sheetbox .choice button[data-m]').forEach(b=>b.onclick=()=>{
+      mom=b.dataset.m;document.querySelectorAll('.sheetbox .choice button[data-m]').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');});
+    const pn=document.getElementById('n-pon'),rc=document.getElementById('n-rec'),dw=document.getElementById('n-dw');
+    pn.onclick=()=>{rec=false;pn.classList.add('sel');rc.classList.remove('sel');dw.style.display='block';};
+    rc.onclick=()=>{rec=true;rc.classList.add('sel');pn.classList.remove('sel');dw.style.display='none';};
+    document.getElementById('f-no').onclick=sheetClose;
+    document.getElementById('f-ok').onclick=()=>{
+      S.items.push({id:uid(),moment:mom,type:'todo',name:n.text,detail:'',recurrent:rec,
+        days:rec?[0,1,2,3,4,5,6]:null,date:rec?null:document.getElementById('f-date').value,
+        fam:null,created:today(),ord:nextOrd(mom,'todo'),pauses:[]});
+      S.notes=S.notes.filter(x=>x.id!==id);
+      save();sheetClose();render();toast('Devenue une chose à faire');};
+    return;
+  }
+  sheetOpen(`<h3>Placer dans l'agenda</h3>
+    <p style="color:var(--dim);font-weight:300;font-size:14.5px;margin:-10px 0 16px">${esc(n.text)}</p>
+    <label>Date</label><input type="date" id="f-date" value="${today()}">
+    <div class="two"><div><label>Début</label><input type="time" id="f-s"></div>
+      <div><label>Fin</label><input type="time" id="f-e"></div></div>
+    <div class="btnrow"><button class="btn" id="f-ok">Placer</button>
+      <button class="btn ghost" id="f-no">Annuler</button></div>`);
+  document.getElementById('f-no').onclick=sheetClose;
+  document.getElementById('f-ok').onclick=()=>{
+    const d=document.getElementById('f-date').value||today();
+    S.evts=S.evts||[];
+    S.evts.push({id:uid(),title:n.text,start:document.getElementById('f-s').value||null,
+      end:document.getElementById('f-e').value||null,note:'',recurrent:false,days:null,date:d,from:null});
+    S.notes=S.notes.filter(x=>x.id!==id);
+    save();sheetClose();render();toast('Placée dans l\'agenda');};
+}
+
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='3.9';
+const VERSION='4.1';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -2306,7 +2462,7 @@ function wizReset(step,per){
       S.gpauses=(S.gpauses||[]).filter(p=>!chevauche(p));
     }
     S.settings.statsFrom=today();S.settings.ecartsFrom=shift(new Date(),1);
-    S.debts=[];S.baseline=0;S.awards=[];S.credits={rec:0,pun:0};S.recGiven=0;
+    S.debts=[];S.baseline=0;S.awards=[];S.credits={rec:0,pun:0};S.recGiven=0;S.popGiven=0;
     save();sheetClose();render();toast('Nouveau départ');};
 }
 function stamp(){
@@ -2372,7 +2528,7 @@ function go(v,mom,push){
   if(push!==false){try{history.pushState({v,mom:moment},'');}catch(e){}}
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('on'));
   document.getElementById({home:'s-home',moment:'s-moment',week:'s-week',month:'s-month',
-    week:'s-cal',month:'s-cal',cal:'s-cal',stat:'s-stat',detail:'s-detail',goals:'s-goals',tools:'s-tools',set:'s-set'}[v]).classList.add('on');
+    week:'s-cal',month:'s-cal',cal:'s-cal',stat:'s-stat',detail:'s-detail',goals:'s-goals',notes:'s-notes',tools:'s-tools',set:'s-set'}[v]).classList.add('on');
   window.scrollTo(0,0);render();
 }
 function render(){
@@ -2382,6 +2538,7 @@ function render(){
   if(view==='stat')renderStat();
   if(view==='detail')renderDetail();
   if(view==='goals')renderGoals();
+  if(view==='notes')renderNotes();
   if(view==='tools')renderTools();
   if(view==='set')renderSet();
 }
@@ -2465,6 +2622,11 @@ document.addEventListener('click',e=>{
     if(k==='rec')S.recPool=S.recPool.filter(x=>x.id!==id);
     else S.punPool=S.punPool.filter(x=>x.id!==id);
     save();renderGoals();return;}
+  if(d.addnote)return formNote();
+  if(d.editnote)return formNote(d.editnote);
+  if(d.delnote){if(confirm('Supprimer cette idée ?')){
+    S.notes=S.notes.filter(x=>x.id!==d.delnote);save();renderNotes();renderHome();}return;}
+  if(d.tonote){const[k,id]=d.tonote.split('|');return convertNote(k,id);}
   if(d.addg)return formGobj();
   if(d.gdone){const o=S.gobjs.find(x=>x.id===d.gdone);
     if(o){o.done=!o.done;o.doneDate=o.done?today():null;save();renderGoals();
