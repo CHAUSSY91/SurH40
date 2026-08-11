@@ -140,6 +140,18 @@ En option : suppression de l'historique, tout ou sur une période — cases coch
 cheats, bilans, repas, pauses. Habits, familles, agenda, objectifs, outils et
 catalogues survivent toujours.
 
+### Le bouton « Ça monte »
+Gros bouton rouge fixe en bas de l'accueil. Un appui ouvre un écran noir : un
+cercle qui se dilate au rythme du souffle, 5 s inspire / 5 s expire, pendant
+60 secondes. Puis trois choix : c'est passé / je reporte / j'ai craqué.
+*Pourquoi cette forme* : en colère, on ne peut ni lire ni écrire — la fonction
+qui sert à ça vient précisément de lâcher. Donc un bouton, un cercle, trois choix.
+Chaque appui est horodaté. **Outils → Historique des colères** montre la
+répartition par créneau de 2 h et par jour de semaine, et désigne le créneau
+dominant. L'information ne s'obtient pas autrement : en colère, on ne prend pas
+de notes. Une fois connue, ce n'est pas la colère qu'on répare, c'est le créneau
+qu'on réorganise.
+
 ### Suivi de poids
 Points bruts en gris + **tendance sur 7 relevés** en vert. C'est la ligne verte
 qui compte : les variations quotidiennes sont de l'eau et du sel, pas de la graisse.
@@ -184,5 +196,5 @@ est supprimé par Google.
 ## 8. Méthode de travail
 
 Chaque version est validée par une suite de tests automatisés qui simule un vrai
-parcours dans l'appli — 317 vérifications à ce jour. Toute demande est **cadrée
+parcours dans l'appli — 344 vérifications à ce jour. Toute demande est **cadrée
 avant d'être codée** : on discute, tu valides, je code.
