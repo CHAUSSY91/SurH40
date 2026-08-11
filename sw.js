@@ -1,4 +1,4 @@
-const CACHE='surh40-v4.3';
+const CACHE='surh40-v4.4';
 const ASSETS=['./','./index.html','./manifest.webmanifest',
   './icon-192.png','./icon-512.png','./apple-touch-icon.png'];
 self.addEventListener('install',e=>{
@@ -10,6 +10,8 @@ self.addEventListener('activate',e=>{
 });
 self.addEventListener('fetch',e=>{
   if(e.request.method!=='GET')return;
+  const u=new URL(e.request.url);
+  if(u.origin!==self.location.origin)return;   /* Google et polices : jamais mis en cache */
   e.respondWith(
     caches.match(e.request).then(hit=>hit||fetch(e.request).then(res=>{
       const copy=res.clone();

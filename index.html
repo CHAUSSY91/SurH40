@@ -14,6 +14,7 @@
 <meta name="mobile-web-app-capable" content="yes">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Barlow+Condensed:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -264,6 +265,10 @@ label{display:block;font-family:'Barlow Condensed',sans-serif;text-transform:upp
 .evb .hr{font-family:'Barlow Condensed',sans-serif;font-size:12.5px;letter-spacing:.1em;
   color:var(--or);flex:none;min-width:40px;text-align:left}
 .evb .rec{color:var(--dim);font-size:12px;font-style:normal;flex:none}
+.evb .rec.gg{color:#6E8BD6;font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:11px}
+.evb.g .dot{background:#6E8BD6}
+.tl.g{border-left-color:#6E8BD6}
+.tl.g .h{color:#6E8BD6}
 .slot{margin-bottom:22px}
 .slot h4{margin:0 0 9px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
   letter-spacing:.22em;font-size:11.5px;color:var(--or);display:flex;align-items:center;gap:11px}
@@ -612,7 +617,7 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  gcal:{on:false,events:[],synced:null},poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
@@ -944,9 +949,10 @@ function streakDays(){
 /* ---- événements : horaires + récurrence hebdomadaire ---- */
 function evtsFor(date){
   const dw=new Date(date).getDay();
-  return (S.evts||[]).filter(e=>e.recurrent
+  const miens=(S.evts||[]).filter(e=>e.recurrent
       ? (e.days||[]).includes(dw)&&(!e.from||e.from<=date)
-      : e.date===date)
+      : e.date===date);
+  return miens.concat(gcalFor(date))
     .sort((a,b)=>(a.start||'99:99').localeCompare(b.start||'99:99'));
 }
 function hasEvt(date){return evtsFor(date).length>0;}
@@ -1142,12 +1148,16 @@ function renderDay(){
     h+=chips.length?`<div class="chips2">${chips.join('')}</div>`
       :`<div class="empty" style="padding:0 0 10px">Aucune habit sur cette tranche.</div>`;
     const l=evs.filter(e=>evtMoment(e)===m);
-    l.forEach(e=>h+=`<button class="tl pan" data-evt="${e.id}">
+    l.forEach(e=>h+=`<button class="tl pan${e.gcal?' g':''}" data-evt="${e.id}">
       <span class="h">${e.start}${e.end?`<small>${e.end}</small>`:''}</span>
-      <span class="ti">${esc(e.title)}${e.recurrent?'<em>chaque semaine</em>':''}${e.note?`<em>${esc(e.note)}</em>`:''}</span></button>`);
+      <span class="ti">${esc(e.title)}${e.gcal?'<em>Google Agenda</em>':e.recurrent?'<em>chaque semaine</em>':''}${e.note?`<em>${esc(e.note)}</em>`:''}</span></button>`);
     h+=`<button class="add" data-addev="${date}|${m==='matin'?'09:00':m==='midi'?'14:00':'19:00'}">+ Ajouter sur ${MOMENTS[m].t.toLowerCase()}</button></div>`;
   });
-  const noh=evs.filter(e=>!e.start);
+  const jour=evs.filter(e=>e.jour);
+  if(jour.length){h+=`<div class="slot"><h4>Toute la journée</h4>`+
+    jour.map(e=>`<button class="tl pan g" data-evt="${e.id}"><span class="h">—</span>
+      <span class="ti">${esc(e.title)}<em>Google Agenda</em></span></button>`).join('')+`</div>`;}
+  const noh=evs.filter(e=>!e.start&&!e.jour);
   if(noh.length){h+=`<div class="slot"><h4>Sans horaire</h4>`+
     noh.map(e=>`<button class="tl pan" data-evt="${e.id}"><span class="h">—</span>
       <span class="ti">${esc(e.title)}</span></button>`).join('')+`</div>`;}
@@ -1164,9 +1174,9 @@ function renderWeek(){
     h+=`<div class="day pan ${key===today()?'today':''}">
       <button class="dayhead" data-wday="${key}"><span>${DOW[d.getDay()]} ${d.getDate()}</span>
         <span class="pct">${sc.pct===null?'':sc.pct+'%'} ›</span></button>`;
-    evs.forEach(e=>h+=`<button class="ev evb" data-evt="${e.id}"><i class="dot"></i>
+    evs.forEach(e=>h+=`<button class="ev evb${e.gcal?' g':''}" data-evt="${e.id}"><i class="dot"></i>
       ${e.start?`<span class="hr">${e.start}</span>`:''}<span style="flex:1;text-align:left">${esc(e.title)}</span>
-      ${e.recurrent?'<i class="rec">⟳</i>':''}</button>`);
+      ${e.gcal?'<i class="rec gg">G</i>':e.recurrent?'<i class="rec">⟳</i>':''}</button>`);
     pon.forEach(i=>h+=`<div class="ev"><i class="dot" style="background:var(--or)"></i><span>${esc(i.name)} · ${MOMENTS[i.moment].t.toLowerCase()}</span></div>`);
     if(!evs.length&&!pon.length)h+=`<div class="ev" style="color:var(--dim)">rien de posé</div>`;
     h+=`<button class="addev" data-addev="${key}">+ ajouter</button></div>`;
@@ -1925,6 +1935,16 @@ function formEvent(arg){
   focusFirst();
 }
 function evtDetail(id){
+  if(String(id).slice(0,2)==='g_'){
+    const g=((S.gcal&&S.gcal.events)||[]).find(x=>x.id===id);if(!g)return;
+    sheetOpen(`<h3>${esc(g.title)}</h3>
+      <div class="mrow"><span>Horaire</span><span class="pct">${g.jour?'toute la journée':(evtTime(g)||'sans horaire')}</span></div>
+      <div class="mrow"><span>Source</span><span class="pct">Google Agenda</span></div>
+      ${g.note?`<p style="color:var(--dim);font-weight:300;margin:14px 0 0">${esc(g.note)}</p>`:''}
+      <p class="empty" style="margin-top:12px">Cet événement vient de Google Agenda. Modifie-le depuis Google : SurH40 le lit, ne le touche pas.</p>
+      <div class="btnrow" style="margin-top:14px"><button class="btn ghost" id="f-no">Fermer</button></div>`);
+    document.getElementById('f-no').onclick=sheetClose;return;
+  }
   const e=(S.evts||[]).find(x=>x.id===id);if(!e)return;
   const jours=e.recurrent?(e.days||[]).map(i=>DOW[i]).join(', '):null;
   sheetOpen(`<h3>${esc(e.title)}</h3>
@@ -2201,6 +2221,87 @@ function reportMonth(dd){
 
 
 
+
+/* ================= GOOGLE AGENDA (lecture seule) ================= */
+const GCAL_ID='142888712730-5vlch8j4o2j7ebbi7uiudc3bfeeopbcn.apps.googleusercontent.com';
+const GCAL_SCOPE='https://www.googleapis.com/auth/calendar.readonly';
+let gcalToken=null,gcalExp=0,gcalClient=null,gcalBusy=false;
+
+function gcalPret(){return typeof google!=='undefined'&&google.accounts&&google.accounts.oauth2;}
+function gcalActif(){return !!(S.gcal&&S.gcal.on);}
+function gcalInit(){
+  if(gcalClient||!gcalPret())return gcalClient;
+  gcalClient=google.accounts.oauth2.initTokenClient({
+    client_id:GCAL_ID,scope:GCAL_SCOPE,
+    callback:r=>{
+      if(r&&r.access_token){
+        gcalToken=r.access_token;gcalExp=Date.now()+(r.expires_in||3600)*1000-60000;
+        S.gcal=S.gcal||{};S.gcal.on=true;save();gcalSync(true);
+      }else{gcalBusy=false;toast('Connexion refusée');renderSet();}
+    },
+    error_callback:()=>{gcalBusy=false;toast('Connexion annulée');renderSet();}
+  });
+  return gcalClient;
+}
+function gcalConnect(){
+  if(!gcalPret()){toast('Google pas encore chargé, réessaie');return;}
+  gcalBusy=true;renderSet();
+  gcalInit().requestAccessToken({prompt:'consent'});
+}
+function gcalDeconnect(){
+  gcalToken=null;gcalExp=0;
+  S.gcal={on:false,events:[],synced:null};
+  save();render();toast('Google Agenda déconnecté');
+}
+async function gcalSync(silencieux){
+  if(!gcalActif())return;
+  if(!gcalToken||Date.now()>gcalExp){
+    if(!gcalPret())return;
+    gcalBusy=true;renderSet();
+    gcalInit().requestAccessToken({prompt:''});
+    return;
+  }
+  gcalBusy=true;if(!silencieux)renderSet();
+  try{
+    const t0=new Date();t0.setDate(t0.getDate()-45);
+    const t1=new Date();t1.setDate(t1.getDate()+120);
+    const url='https://www.googleapis.com/calendar/v3/calendars/primary/events'
+      +'?timeMin='+encodeURIComponent(t0.toISOString())
+      +'&timeMax='+encodeURIComponent(t1.toISOString())
+      +'&singleEvents=true&orderBy=startTime&maxResults=250';
+    const r=await fetch(url,{headers:{Authorization:'Bearer '+gcalToken}});
+    if(r.status===401){gcalToken=null;gcalBusy=false;toast('Session expirée, reconnecte-toi');renderSet();return;}
+    if(!r.ok)throw new Error('http '+r.status);
+    const data=await r.json();
+    S.gcal=S.gcal||{on:true};
+    S.gcal.events=(data.items||[]).filter(e=>e.status!=='cancelled').map(e=>{
+      const deb=e.start&&(e.start.dateTime||e.start.date);
+      const fin=e.end&&(e.end.dateTime||e.end.date);
+      const jour=e.start&&e.start.date?true:false;
+      return {id:'g_'+e.id,title:e.summary||'(sans titre)',
+        date:(deb||'').slice(0,10),
+        start:jour?null:(deb||'').slice(11,16),
+        end:jour?null:(fin||'').slice(11,16),
+        note:e.location||'',jour:jour,gcal:true};
+    }).filter(e=>e.date);
+    S.gcal.synced=new Date().toISOString();
+    save();
+  }catch(err){toast('Synchronisation impossible');}
+  gcalBusy=false;render();
+}
+function gcalFor(date){
+  if(!gcalActif()||S.settings.gcalMasque)return [];
+  return ((S.gcal&&S.gcal.events)||[]).filter(e=>e.date===date);
+}
+function gcalLabel(){
+  if(!S.gcal||!S.gcal.synced)return 'jamais';
+  const d=new Date(S.gcal.synced),m=Math.round((Date.now()-d)/60000);
+  if(m<2)return "à l'instant";
+  if(m<60)return `il y a ${m} min`;
+  const h=Math.round(m/60);
+  return h<24?`il y a ${h} h`:`le ${iso(d)}`;
+}
+
 /* ================= SUIVI DE POIDS ================= */
 function poidsData(){
   S.poids=S.poids||{profil:null,entries:[]};
@@ -2419,7 +2520,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='4.3';
+const VERSION='4.4';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -2453,6 +2554,21 @@ function renderSet(){
     <input type="file" id="impfile" accept=".json,application/json" style="display:none">
     <p class="empty" style="margin-top:10px">Le fichier s'appelle <b>SurH40-sauvegarde-${stamp()}.json</b> et se range dans tes Téléchargements.
       Les anciennes sont conservées. La restauration remplace intégralement les données de cet appareil.</p></div>
+
+  <div class="block"><h3>Google Agenda</h3>
+    <div class="empty">Tes rendez-vous Google apparaissent dans les trois vues du Calendrier, en bleu, marqués d'un G.
+      SurH40 les lit sans jamais les modifier.</div>
+    ${gcalActif()?`
+      <div class="switch pan"><span>Masquer les événements Google</span>
+        <div class="toggle ${S.settings.gcalMasque?'on':''}" id="gmask"><i></i></div></div>
+      <div class="mrow"><span>Événements chargés</span><span class="pct">${((S.gcal&&S.gcal.events)||[]).length}</span></div>
+      <div class="mrow"><span>Dernière synchronisation</span><span class="pct">${gcalLabel()}</span></div>
+      <div class="btnrow"><button class="btn" id="gsync" ${gcalBusy?'disabled style="opacity:.5"':''}>${gcalBusy?'Synchronisation…':'Synchroniser'}</button>
+        <button class="btn ghost" id="goff">Déconnecter</button></div>`
+    :`<button class="btn" id="gon" style="width:100%" ${gcalBusy?'disabled style="opacity:.5"':''}>${gcalBusy?'Connexion…':'Connecter Google Agenda'}</button>
+      <p class="empty" style="margin-top:10px">Google affichera un avertissement « application non validée » : c'est normal,
+        l'appli n'est publiée que pour toi. Clique sur « Paramètres avancés » puis « Continuer ».</p>`}
+    </div>
 
   <div class="block"><h3>Pause générale</h3>
     <div class="empty">Le mode vacances : toutes les habits et tous les Bad Habits sont suspendus.
@@ -2504,6 +2620,12 @@ function renderSet(){
     <div class="mrow"><span>Version</span><span class="pct">SurH40 ${VERSION}</span></div>
     <div class="mrow"><span>Mode hors ligne</span><span class="pct">${('serviceWorker' in navigator)?'disponible':'non supporté'}</span></div></div>`;
   document.getElementById('set').innerHTML=h;
+  const gon=document.getElementById('gon');if(gon)gon.onclick=gcalConnect;
+  const goff=document.getElementById('goff');if(goff)goff.onclick=()=>{
+    if(confirm('Déconnecter Google Agenda ? Les événements chargés seront retirés.'))gcalDeconnect();};
+  const gsy=document.getElementById('gsync');if(gsy)gsy.onclick=()=>gcalSync(false);
+  const gm=document.getElementById('gmask');if(gm)gm.onclick=()=>{
+    S.settings.gcalMasque=!S.settings.gcalMasque;save();render();};
   const fa=document.getElementById('famacc');
   if(fa)fa.onclick=()=>{setFamOpen=!setFamOpen;renderSet();};
   document.getElementById('rtog').onclick=async()=>{
@@ -2832,13 +2954,14 @@ document.getElementById('send-month').onclick=()=>{SEND=true;reportMonth(cursor)
       saved.evts.push({id:Math.random().toString(36).slice(2,9),title:e.title,start:null,end:null,
         note:'',recurrent:false,days:null,date:k,from:null})));}
   if(saved)S=Object.assign(JSON.parse(JSON.stringify(BLANK)),saved,
-    {settings:Object.assign({window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
+    {settings:Object.assign({window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
   reindexAll();
   render();planRappels();
   try{history.replaceState({v:'home'},'');}catch(e){}
   if('serviceWorker' in navigator&&location.protocol!=='file:')
     navigator.serviceWorker.register('sw.js').catch(()=>{});
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();planRappels();}});
+  document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();planRappels();
+    if(gcalActif()&&(!S.gcal.synced||Date.now()-new Date(S.gcal.synced)>1800000))gcalSync(true);}});
 })();
 </script>
 </body>

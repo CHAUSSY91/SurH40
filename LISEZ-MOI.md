@@ -158,17 +158,31 @@ un IMC de 18,5.
 - **Sauvegarde manuelle.** À faire une fois par semaine. Fichier
   `SurH40-sauvegarde-JJMMAAAA.json` dans les Téléchargements, jamais écrasé.
 
-## 6. Chantiers ouverts
+## 6. Google Agenda
 
-- Synchronisation Google Agenda sur les trois vues (demande un identifiant OAuth
-  à créer côté Google Cloud)
+Branché en **lecture seule** depuis la 4.4. Réglages → Google Agenda → Connecter.
+Les événements Google apparaissent en bleu avec un badge G dans les trois vues,
+ne sont jamais modifiables depuis SurH40, et peuvent être masqués d'une bascule.
+Fenêtre chargée : 45 jours en arrière, 120 en avant. Resynchronisation
+automatique à la réouverture de l'appli si la dernière date de plus de 30 minutes.
+
+Identifiant OAuth (public) : projet Google Cloud `SurH40`, client `SurH40 web`,
+origine autorisée `https://chaussy91.github.io`. L'application reste en mode
+« Test » : seul le compte déclaré en utilisateur test peut se connecter, et Google
+affiche un avertissement « application non validée » qu'il faut contourner par
+« Paramètres avancés » → « Continuer ». Un client OAuth inutilisé pendant six mois
+est supprimé par Google.
+
+## 7. Chantiers ouverts
+
+- Écriture des événements SurH40 vers Google Agenda
 - Rappels fiables via fichier d'agenda
 - Synchronisation multi-appareils (Supabase, gratuit)
 
 ---
 
-## 7. Méthode de travail
+## 8. Méthode de travail
 
 Chaque version est validée par une suite de tests automatisés qui simule un vrai
-parcours dans l'appli — 280 vérifications à ce jour. Toute demande est **cadrée
+parcours dans l'appli — 305 vérifications à ce jour. Toute demande est **cadrée
 avant d'être codée** : on discute, tu valides, je code.
