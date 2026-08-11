@@ -106,6 +106,11 @@ header{padding:30px 20px 0;text-align:center;position:relative}
 .dette p{margin:0;font-size:15.5px}
 .dette .btn{margin-top:11px}
 
+.backup{margin:0 0 20px;padding:15px 17px;border-radius:var(--r);
+  border:1px solid rgba(168,131,74,.5);background:linear-gradient(180deg,rgba(168,131,74,.13),rgba(168,131,74,.04))}
+.backup h4{margin:0 0 6px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
+  letter-spacing:.2em;font-size:11px;color:var(--bronze)}
+.backup p{margin:0;font-size:15px;font-weight:300}
 .recall{margin:0 0 20px;padding:15px 17px}
 .recall h4{margin:0 0 8px;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
   letter-spacing:.22em;font-size:10.5px;color:var(--olive)}
@@ -617,7 +622,7 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  gcal:{on:false,events:[],synced:null},poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  gcal:{on:false,events:[],synced:null},poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
@@ -993,7 +998,23 @@ function renderHome(){
     qp.className='quote pan';
     qp.innerHTML=`<p>${q[0]}</p><span class="src">${q[1]}</span>`;
   }
-  document.getElementById('dette').innerHTML='';
+  /* rappel de sauvegarde : discret, mais impossible à oublier indéfiniment */
+  const bd=document.getElementById('dette');
+  const nJours=Object.keys(S.log||{}).length;
+  const snooze=S.settings.backupSnooze||'';
+  let alerte=null;
+  if(nJours>=3&&today()>=snooze){
+    if(!S.lastExport)alerte={t:'Aucune sauvegarde',
+      m:`${nJours} journées enregistrées et jamais exportées. Un cache vidé ou un téléphone changé, et tout disparaît.`};
+    else{
+      const j=Math.floor((Date.now()-new Date(S.lastExport))/86400000);
+      if(j>=30)alerte={t:'Sauvegarde à refaire',m:`Ton dernier export date de ${j} jours.`};
+    }
+  }
+  bd.innerHTML=alerte?`<div class="backup">
+    <h4>${alerte.t}</h4><p>${alerte.m}</p>
+    <div class="btnrow"><button class="btn" data-bkp="1">Exporter maintenant</button>
+      <button class="btn ghost" data-bkplater="1">Plus tard</button></div></div>`:'';
 
   const evs=evtsFor(date);
   const pon=S.items.filter(i=>!i.recurrent&&i.date===date&&i.type!=='bad');
@@ -2520,7 +2541,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='4.4';
+const VERSION='4.5';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -2742,7 +2763,7 @@ function stamp(){
 function exportData(share){
   const payload=JSON.stringify(Object.assign({_app:'SurH40',_v:VERSION,_date:new Date().toISOString()},S),null,1);
   const name=`SurH40-sauvegarde-${stamp()}.json`;
-  S.lastExport=new Date().toISOString();save();
+  S.lastExport=new Date().toISOString();S.settings.backupSnooze=null;save();
   if(share){
     try{const file=new File([payload],name,{type:'application/json'});
       if(navigator.canShare&&navigator.canShare({files:[file]}))
@@ -2895,6 +2916,9 @@ document.addEventListener('click',e=>{
   if(d.poidsprof)return formPoidsProfil();
   if(d.addpoids)return formPoids();
   if(d.delpoids){S.poids.entries=S.poids.entries.filter(x=>x.date!==d.delpoids);save();renderTools();return;}
+  if(d.bkp){exportData(false);setTimeout(render,150);return;}
+  if(d.bkplater){S.settings.backupSnooze=shift(new Date(),7);save();render();
+    toast('Rappel dans 7 jours');return;}
   if(d.addnote)return formNote();
   if(d.editnote)return formNote(d.editnote);
   if(d.delnote){if(confirm('Supprimer cette idée ?')){
@@ -2954,7 +2978,7 @@ document.getElementById('send-month').onclick=()=>{SEND=true;reportMonth(cursor)
       saved.evts.push({id:Math.random().toString(36).slice(2,9),title:e.title,start:null,end:null,
         note:'',recurrent:false,days:null,date:k,from:null})));}
   if(saved)S=Object.assign(JSON.parse(JSON.stringify(BLANK)),saved,
-    {settings:Object.assign({window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
+    {settings:Object.assign({window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
   reindexAll();
   render();planRappels();
   try{history.replaceState({v:'home'},'');}catch(e){}

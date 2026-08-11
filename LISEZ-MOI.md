@@ -155,7 +155,7 @@ un IMC de 18,5.
   importer dans Google Agenda, ou la synchronisation Google Agenda.
 - **Aucune synchronisation entre appareils.** Chaque appareil a ses données.
   Passer par Réglages → Exporter / Restaurer.
-- **Sauvegarde manuelle.** À faire une fois par semaine. Fichier
+- **Sauvegarde manuelle.** À faire une fois par semaine. L'accueil alerte au bout de 30 jours sans export, ou dès 3 journées enregistrées si aucune sauvegarde n'existe. Fichier
   `SurH40-sauvegarde-JJMMAAAA.json` dans les Téléchargements, jamais écrasé.
 
 ## 6. Google Agenda
@@ -184,5 +184,5 @@ est supprimé par Google.
 ## 8. Méthode de travail
 
 Chaque version est validée par une suite de tests automatisés qui simule un vrai
-parcours dans l'appli — 305 vérifications à ce jour. Toute demande est **cadrée
+parcours dans l'appli — 317 vérifications à ce jour. Toute demande est **cadrée
 avant d'être codée** : on discute, tu valides, je code.
