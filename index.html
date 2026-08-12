@@ -492,8 +492,13 @@ span.chip{cursor:default}
 .entry p{margin:0 0 4px;font-size:14.5px;font-weight:300;color:var(--dim);white-space:pre-wrap}
 .entry .dt{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.16em;
   text-transform:uppercase;color:var(--bronze);margin-top:7px}
-.entry .x{position:absolute;top:8px;right:9px;background:none;border:0;color:var(--dim);
-  font-size:18px;cursor:pointer;line-height:1;padding:2px 5px}
+.entry .acts{margin-top:11px}
+.edtog{width:100%;margin-top:10px;background:none;border:1px solid var(--trait);border-radius:var(--r);
+  color:var(--dim);font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
+  letter-spacing:.18em;font-size:11.5px;padding:10px;cursor:pointer}
+.edtog:hover{border-color:var(--or);color:var(--or)}
+.edtog.on{border-color:var(--or);color:var(--or);background:rgba(201,162,39,.09)}
+.prov .acts{margin-top:11px}
 .entry .lb{color:var(--or);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;
   font-family:'Barlow Condensed',sans-serif;display:block;margin-top:9px}
 .vision{width:100%;border-radius:var(--r);display:block;margin-bottom:9px}
@@ -680,6 +685,7 @@ let lastTap={k:null,t:0};
 let setFamOpen=false;
 let palOpen=null;
 const openPool=new Set();
+const editTool=new Set();
 let view='home',moment='matin',detailId=null,badOpen=false,badStatOpen=false,openTool=null;
 const openDet=new Set();
 
@@ -1704,15 +1710,24 @@ const TOOLS=[
 function allTools(){return TOOLS.concat((S.customTools||[]).map(c=>({k:c.k,t:c.t,r:c.r,custom:true})));}
 function renderTools(){
   let h=blocPoids();
+  const edP=editTool.has('prov');
   h+=`<div class="acc pan ${openTool==='prov'?'open':''}">
     <button class="acchead" data-tool="prov"><span class="t">Proverbes</span>
       <span class="meta">${QUOTES.length+S.proverbs.length}</span><span class="c">›</span></button>
     <div class="accbody">
       <p class="rule">Un par jour sur l'accueil. Ajoute les tiens, ils entreront dans la rotation.</p>
       <button class="add" data-addprov="1" style="margin-bottom:12px">+ Ajouter un proverbe</button>`;
-  S.proverbs.forEach((q,i)=>h+=`<div class="prov pan"><button class="x" data-delprov="${i}">×</button>
-    <p>${esc(q[0])}</p><span>${esc(q[1])}</span></div>`);
+  if(S.proverbs.length)h+=`<div class="sub" style="margin-bottom:8px">Les tiens</div>`;
+  S.proverbs.forEach((q,i)=>{
+    h+=`<div class="prov pan"><p>${esc(q[0])}</p><span>${esc(q[1])}</span>`;
+    if(edP)h+=`<div class="acts">
+      <button data-mvprov="${i}|-1">▲</button><button data-mvprov="${i}|1">▼</button>
+      <button data-edprov="${i}">Modifier</button>
+      <button class="dg" data-delprov="${i}">Supprimer</button></div>`;
+    h+=`</div>`;});
+  if(S.proverbs.length)h+=`<div class="sub" style="margin:16px 0 8px">Fournis avec l'appli</div>`;
   QUOTES.forEach(q=>h+=`<div class="prov pan"><p>${esc(q[0])}</p><span>${esc(q[1])}</span></div>`);
+  if(S.proverbs.length)h+=`<button class="edtog${edP?' on':''}" data-edtool="prov">${edP?'Terminer':'Modifier les entrées'}</button>`;
   h+=`</div></div>`;
 
   allTools().forEach(T=>{
@@ -1722,9 +1737,10 @@ function renderTools(){
         <span class="meta">${list.length||''}</span><span class="c">›</span></button>
       <div class="accbody"><p class="rule">${T.r}</p>`;
     if(!list.length)h+=`<div class="empty">Rien de noté pour l'instant.</div>`;
+    const ed=editTool.has(T.k);
     list.slice().reverse().forEach((e,ri)=>{
       const idx=list.length-1-ri;
-      h+=`<div class="entry"><button class="x" data-delent="${T.k}|${idx}">×</button>`;
+      h+=`<div class="entry">`;
       if(T.k==='vision'){
         if(e.img)h+=`<img class="vision" src="${e.img}" alt="">`;
         h+=`<h5>${esc(e.title||'Sans titre')}</h5>${e.note?`<p>${esc(e.note)}</p>`:''}`;
@@ -1741,9 +1757,15 @@ function renderTools(){
       }else{
         h+=`<h5>${esc(e.title)}</h5>${e.note?`<p>${esc(e.note)}</p>`:''}`;
       }
-      h+=`<div class="dt">${e.date||''}</div></div>`;
+      h+=`<div class="dt">${e.date||''}</div>`;
+      if(ed)h+=`<div class="acts">
+        <button data-mvent="${T.k}|${idx}|1">▲</button><button data-mvent="${T.k}|${idx}|-1">▼</button>
+        <button data-edent="${T.k}|${idx}">Modifier</button>
+        <button class="dg" data-delent="${T.k}|${idx}">Supprimer</button></div>`;
+      h+=`</div>`;
     });
     h+=`<button class="add" data-addtool="${T.k}">+ ${T.k==='vision'?'Ajouter une image':T.k==='cookie'?'Ajouter une victoire':'Ajouter une entrée'}</button>`;
+    if(list.length)h+=`<button class="edtog${ed?' on':''}" data-edtool="${T.k}">${ed?'Terminer':'Modifier les entrées'}</button>`;
     if(T.custom)h+=`<button class="add" data-deltool="${T.k}" style="border-color:rgba(169,59,39,.4);color:var(--rouge)">Supprimer cet outil</button>`;
     h+=`</div></div>`;
   });
@@ -1765,16 +1787,24 @@ function formNewTool(){
     S.tools[k]=[];openTool=k;save();sheetClose();renderTools();toast('Outil créé');};
   focusFirst();
 }
-function formProverb(){
-  sheetOpen(`<h3>Nouveau proverbe</h3>
-    <label>Texte</label><textarea id="f-name" placeholder="Ce qui te fait avancer quand tu n'as plus envie."></textarea>
-    <label>Source</label><input type="text" id="f-src" placeholder="Marc Aurèle · Proverbes 27:17 · toi">
-    <div class="btnrow"><button class="btn" id="f-ok">Ajouter</button><button class="btn ghost" id="f-no">Annuler</button></div>`);
+function moveEntry(k,idx,dir){
+  const l=(k==='prov')?S.proverbs:(S.tools[k]||[]);
+  const j=idx+dir;
+  if(j<0||j>=l.length)return false;
+  const t=l[idx];l[idx]=l[j];l[j]=t;save();return true;
+}
+function formProverb(idx){
+  const ex=(idx!==undefined&&idx!==null)?S.proverbs[idx]:null;
+  sheetOpen(`<h3>${ex?'Modifier le proverbe':'Nouveau proverbe'}</h3>
+    <label>Texte</label><textarea id="f-name" placeholder="Ce qui te fait avancer quand tu n'as plus envie.">${ex?esc(ex[0]):''}</textarea>
+    <label>Source</label><input type="text" id="f-src" placeholder="Marc Aurèle · Proverbes 27:17 · toi" value="${ex?esc(ex[1]):''}">
+    <div class="btnrow"><button class="btn" id="f-ok">${ex?'Enregistrer':'Ajouter'}</button><button class="btn ghost" id="f-no">Annuler</button></div>`);
   document.getElementById('f-no').onclick=sheetClose;
   document.getElementById('f-ok').onclick=()=>{
-    const n=document.getElementById('f-name').value.trim();if(!n)return;
-    S.proverbs.push([n,document.getElementById('f-src').value.trim()||'—']);
-    save();sheetClose();renderTools();toast('Ajouté');};
+    const n=document.getElementById('f-name').value.trim();if(!n){toast('Il manque le texte');return;}
+    const src=document.getElementById('f-src').value.trim()||'—';
+    if(ex)S.proverbs[idx]=[n,src];else S.proverbs.push([n,src]);
+    save();sheetClose();renderTools();toast(ex?'Modifié':'Ajouté');};
   focusFirst();
 }
 function shrink(file,cb){
@@ -1786,30 +1816,34 @@ function shrink(file,cb){
     cb(c.toDataURL('image/jpeg',.72));};im.src=r.result;};
   r.readAsDataURL(file);
 }
-function formTool(k){
+function formTool(k,idx){
   const T=allTools().find(x=>x.k===k);
+  const ex=(idx!==undefined&&idx!==null)?(S.tools[k]||[])[idx]:null;
+  const v=f=>ex&&ex[f]?esc(ex[f]):'';
   let body='';
   if(k==='vision')body=`<label>Image (galerie du téléphone)</label>
     <input type="file" id="f-img" accept="image/*" style="margin-bottom:13px">
-    <label>Titre</label><input type="text" id="f-name" placeholder="Mes enfants dans dix ans">
-    <label>Ce que ça veut dire</label><textarea id="f-note"></textarea>`;
-  else if(k==='raa')body=`<label>L'échec en une ligne</label><input type="text" id="f-name" placeholder="Séance de sport sautée">
-    <label>Que s'est-il passé</label><textarea id="f-a"></textarea>
-    <label>Pourquoi</label><textarea id="f-b"></textarea>
-    <label>Comment faire mieux</label><textarea id="f-c"></textarea>`;
-  else if(k==='dea')body=`<label>Le comportement ciblé</label><input type="text" id="f-name" placeholder="Grignotage du soir">
-    <label>Déclencheur</label><textarea id="f-a" placeholder="Le moment, le lieu, la situation."></textarea>
-    <label>Émotion</label><textarea id="f-b" placeholder="Ce que tu ressentais juste avant."></textarea>
-    <label>Palliatif</label><textarea id="f-c" placeholder="Ce que tu fais à la place, décidé à froid."></textarea>`;
-  else if(k==='cookie')body=`<label>La victoire</label><input type="text" id="f-name" placeholder="Quatre ans sans fumer">
-    <label>Ce que tu ressentais</label><textarea id="f-note"></textarea>`;
-  else if(k==='quarante')body=`<label>Le moment</label><input type="text" id="f-name" placeholder="Dernier round, jambes mortes">
-    <label>Ce qu'il s'est passé quand tu as continué</label><textarea id="f-note"></textarea>`;
-  else if(k.slice(0,2)==='c_')body=`<label>Titre de l'entrée</label><input type="text" id="f-name">
-    <label>Contenu</label><textarea id="f-note"></textarea>`;
-  else body=`<label>Le sujet</label><input type="text" id="f-name" placeholder="Ce que je refuse de voir">
-    <label>Sans se mentir</label><textarea id="f-note"></textarea>`;
-  sheetOpen(`<h3>${T.t}</h3><p style="color:var(--dim);font-size:14px;font-weight:300;margin:-10px 0 16px">${T.r}</p>
+    ${ex&&ex.img?`<p class="empty" style="margin-top:-6px">Une image est déjà enregistrée. N'en choisis une que si tu veux la remplacer.</p>`:''}
+    <label>Titre</label><input type="text" id="f-name" placeholder="Mes enfants dans dix ans" value="${v('title')}">
+    <label>Ce que ça veut dire</label><textarea id="f-note">${v('note')}</textarea>`;
+  else if(k==='raa')body=`<label>L'échec en une ligne</label><input type="text" id="f-name" placeholder="Séance de sport sautée" value="${v('title')}">
+    <label>Que s'est-il passé</label><textarea id="f-a">${v('quoi')}</textarea>
+    <label>Pourquoi</label><textarea id="f-b">${v('pourquoi')}</textarea>
+    <label>Comment faire mieux</label><textarea id="f-c">${v('mieux')}</textarea>`;
+  else if(k==='dea')body=`<label>Le comportement ciblé</label><input type="text" id="f-name" placeholder="Grignotage du soir" value="${v('title')}">
+    <label>Déclencheur</label><textarea id="f-a" placeholder="Le moment, le lieu, la situation.">${v('decl')}</textarea>
+    <label>Émotion</label><textarea id="f-b" placeholder="Ce que tu ressentais juste avant.">${v('emo')}</textarea>
+    <label>Palliatif</label><textarea id="f-c" placeholder="Ce que tu fais à la place, décidé à froid.">${v('pal')}</textarea>`;
+  else if(k==='cookie')body=`<label>La victoire</label><input type="text" id="f-name" placeholder="Quatre ans sans fumer" value="${v('title')}">
+    <label>Ce que tu ressentais</label><textarea id="f-note">${v('note')}</textarea>`;
+  else if(k==='quarante')body=`<label>Le moment</label><input type="text" id="f-name" placeholder="Dernier round, jambes mortes" value="${v('title')}">
+    <label>Ce qu'il s'est passé quand tu as continué</label><textarea id="f-note">${v('note')}</textarea>`;
+  else if(k.slice(0,2)==='c_')body=`<label>Titre de l'entrée</label><input type="text" id="f-name" value="${v('title')}">
+    <label>Contenu</label><textarea id="f-note">${v('note')}</textarea>`;
+  else body=`<label>Le sujet</label><input type="text" id="f-name" placeholder="Ce que je refuse de voir" value="${v('title')}">
+    <label>Sans se mentir</label><textarea id="f-note">${v('note')}</textarea>`;
+  sheetOpen(`<h3>${ex?'Modifier · '+T.t:T.t}</h3>
+    ${ex?'':`<p style="color:var(--dim);font-size:14px;font-weight:300;margin:-10px 0 16px">${T.r}</p>`}
     ${body}<div class="btnrow"><button class="btn" id="f-ok">Enregistrer</button>
     <button class="btn ghost" id="f-no">Annuler</button></div>`);
   let img=null;
@@ -1818,15 +1852,16 @@ function formTool(k){
   document.getElementById('f-no').onclick=sheetClose;
   document.getElementById('f-ok').onclick=()=>{
     const n=document.getElementById('f-name').value.trim();
-    if(!n&&!img){toast('Il manque le titre');return;}
+    if(!n&&!img&&!(ex&&ex.img)){toast('Il manque le titre');return;}
     const g=id=>{const el=document.getElementById(id);return el?el.value.trim():'';};
-    const e={title:n,date:today()};
-    if(k==='vision'){e.img=img;e.note=g('f-note');}
+    const e={title:n,date:ex?ex.date:today()};
+    if(k==='vision'){e.img=img||(ex?ex.img:null);e.note=g('f-note');}
     else if(k==='raa'){e.quoi=g('f-a');e.pourquoi=g('f-b');e.mieux=g('f-c');}
     else if(k==='dea'){e.decl=g('f-a');e.emo=g('f-b');e.pal=g('f-c');}
     else e.note=g('f-note');
-    S.tools[k]=S.tools[k]||[];S.tools[k].push(e);
-    save();sheetClose();renderTools();toast('Enregistré');};
+    S.tools[k]=S.tools[k]||[];
+    if(ex)S.tools[k][idx]=e;else S.tools[k].push(e);
+    save();sheetClose();renderTools();toast(ex?'Modifié':'Enregistré');};
   focusFirst();
 }
 
@@ -2684,7 +2719,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='4.6';
+const VERSION='4.7';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -3022,6 +3057,14 @@ document.addEventListener('click',e=>{
   if(d.deltool){if(confirm('Supprimer cet outil et toutes ses entrées ?')){
     S.customTools=S.customTools.filter(c=>c.k!==d.deltool);delete S.tools[d.deltool];
     if(openTool===d.deltool)openTool=null;save();renderTools();}return;}
+  if(d.edtool){if(editTool.has(d.edtool))editTool.delete(d.edtool);else editTool.add(d.edtool);
+    return renderTools();}
+  if(d.edprov)return formProverb(+d.edprov);
+  if(d.mvprov){const[i,dir]=d.mvprov.split('|').map(Number);
+    if(moveEntry('prov',i,dir))renderTools();else toast(dir<0?'Déjà en haut':'Déjà en bas');return;}
+  if(d.edent){const[k,i]=d.edent.split('|');return formTool(k,+i);}
+  if(d.mvent){const[k,i,dir]=d.mvent.split('|');
+    if(moveEntry(k,+i,+dir))renderTools();else toast(+dir>0?'Déjà en haut':'Déjà en bas');return;}
   if(d.addprov)return formProverb();
   if(d.delprov){S.proverbs.splice(+d.delprov,1);save();return renderTools();}
   if(d.addtool)return formTool(d.addtool);
