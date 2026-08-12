@@ -140,6 +140,17 @@ En option : suppression de l'historique, tout ou sur une période — cases coch
 cheats, bilans, repas, pauses. Habits, familles, agenda, objectifs, outils et
 catalogues survivent toujours.
 
+### Dépenses
+Outils → Dépenses. Description, montant, famille, date. Anneau avec bascule
+Aujourd'hui / Ce mois, parts par famille autour et total au centre, plus la
+moyenne par jour et la projection de fin de mois. Familles créables, renommables,
+supprimables — neuf fournies par défaut dont **CHEAT**.
+*Pourquoi une famille CHEAT* : elle donne le coût financier des écarts sans
+qu'aucun chiffre ne circule entre les deux systèmes. Les stats de discipline
+restent des stats de discipline. Un écart ne coûte pas qu'une case rouge.
+Sur l'accueil, entre les rappels et la ligne Matin : le total du jour et un
+bouton + . La ligne reste discrète tant que rien n'est dépensé.
+
 ### Le bouton « Ça monte »
 Gros bouton rouge fixe en bas de l'accueil. Un appui ouvre un écran noir : un
 cercle qui se dilate au rythme du souffle, 5 s inspire / 5 s expire, pendant
@@ -196,5 +207,5 @@ est supprimé par Google.
 ## 8. Méthode de travail
 
 Chaque version est validée par une suite de tests automatisés qui simule un vrai
-parcours dans l'appli — 370 vérifications à ce jour. Toute demande est **cadrée
+parcours dans l'appli — 401 vérifications à ce jour. Toute demande est **cadrée
 avant d'être codée** : on discute, tu valides, je code.

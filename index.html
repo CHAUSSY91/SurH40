@@ -350,6 +350,25 @@ span.chip{cursor:default}
 .fam.open .famhead .c{transform:rotate(90deg)}
 .fambody{display:none;margin-top:14px}
 .fam.open .fambody{display:block;animation:fade .25s ease}
+.deplist{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.depcat{display:flex;align-items:center;gap:10px;padding:8px 4px;border-bottom:1px solid var(--trait)}
+.depcat:last-child{border:0}
+.depcat i{width:9px;height:9px;border-radius:2px;flex:none}
+.depcat .dn{flex:1;font-size:14.5px;font-weight:300}
+.depcat .dp{font-family:'Barlow Condensed',sans-serif;font-size:12px;color:var(--dim);min-width:34px;text-align:right}
+.depcat .de{font-family:'Barlow Condensed',sans-serif;font-size:13.5px;color:var(--marbre);min-width:62px;text-align:right}
+.depline{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--trait)}
+.depline i{width:8px;height:8px;border-radius:2px;flex:none}
+.depline .dl{flex:1;font-size:14.5px;font-weight:300}
+.depline .dl em{display:block;font-style:normal;font-size:11px;color:var(--dim);
+  font-family:'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
+.depline .dv{font-family:'Barlow Condensed',sans-serif;font-size:14px;color:var(--or)}
+.depjour{display:flex;align-items:center;gap:12px;padding:13px 16px;margin-bottom:20px}
+.depjour .t{flex:1;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
+  letter-spacing:.2em;font-size:11px;color:var(--dim)}
+.depjour .v{font-family:'Cinzel',serif;font-size:18px;color:var(--or)}
+.depjour .plus{width:34px;height:34px;border-radius:50%;flex:none;cursor:pointer;
+  background:rgba(201,162,39,.14);border:1px solid rgba(201,162,39,.45);color:var(--or);font-size:19px;line-height:1}
 .crgrid{display:flex;gap:4px;align-items:flex-end}
 .crcol{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px}
 .crcol i{width:100%;border-radius:2px 2px 0 0;display:block}
@@ -570,6 +589,7 @@ footer .btn{flex:1;min-width:135px}
     <div class="quote pan" id="quote"></div>
     <div id="dette"></div>
     <div id="recall"></div>
+    <div id="depjour"></div>
     <div class="rows" id="rows"></div>
     <footer>
       <button class="btn ghost" id="exp-day">Rapport du jour</button>
@@ -676,7 +696,7 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  coleres:[],gcal:{on:false,events:[],synced:null},poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  depenses:{cats:[],items:[]},coleres:[],gcal:{on:false,events:[],synced:null},poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
@@ -1081,6 +1101,12 @@ function renderHome(){
          <span style="color:var(--olive);font-size:13px">· ${MOMENTS[i.moment].t.toLowerCase()}</span></div>`;}).join('')+
      `</div>`:'';
 
+  const dj=depJour(date),tj=depTotal(dj);
+  document.getElementById('depjour').innerHTML=
+    `<div class="depjour pan"><span class="t">Dépenses du jour</span>
+      ${tj?`<span class="v">${eur(tj)}</span>`:'<span class="t" style="letter-spacing:.1em;text-transform:none;font-style:italic">rien de noté</span>'}
+      <button class="plus" data-adddep="1" aria-label="Ajouter une dépense">+</button></div>`;
+
   const rows=['matin','midi','soir'].map(m=>{
     const L=lances(m,date);
     return `<button class="row pan" data-mom="${m}"><span class="nm">${MOMENTS[m].t}</span>
@@ -1090,7 +1116,7 @@ function renderHome(){
   rows.push(`<button class="row pan" data-go="stat"><span class="nm">Stat</span><span class="meta">3 mois</span></button>`);
   rows.push(`<button class="row pan" data-go="goals"><span class="nm">Objectifs</span><span class="meta">${streakDays()} j de série</span></button>`);
   rows.push(`<button class="row pan" data-go="notes"><span class="nm">Idées en vrac</span><span class="meta">${(S.notes||[]).length||'—'}</span></button>`);
-  rows.push(`<button class="row pan" data-go="tools"><span class="nm">Outils</span><span class="meta">${allTools().length+2} fiches</span></button>`);
+  rows.push(`<button class="row pan" data-go="tools"><span class="nm">Outils</span><span class="meta">${allTools().length+4} fiches</span></button>`);
   rows.push(`<button class="row pan" data-go="set"><span class="nm">Réglages</span><span class="meta">${S.settings.rappels&&S.settings.rappels.on?'rappels actifs':'—'}</span></button>`);
   document.getElementById('rows').innerHTML=rows.join('');
 
@@ -1710,6 +1736,7 @@ const TOOLS=[
 function allTools(){return TOOLS.concat((S.customTools||[]).map(c=>({k:c.k,t:c.t,r:c.r,custom:true})));}
 function renderTools(){
   let h=blocPoids();
+  h+=blocDepenses();
   const edP=editTool.has('prov');
   h+=`<div class="acc pan ${openTool==='prov'?'open':''}">
     <button class="acchead" data-tool="prov"><span class="t">Proverbes</span>
@@ -2329,6 +2356,136 @@ function reportMonth(dd){
 
 
 
+
+/* ================= DÉPENSES ================= */
+const CATS_DEFAUT=[
+ {n:'Courses',c:'123,166,92'},{n:'Restaurant',c:'201,162,39'},
+ {n:'Carburant',c:'110,139,214'},{n:'Loisirs',c:'168,131,74'},
+ {n:'Enfants',c:'142,153,214'},{n:'Santé',c:'186,190,196'},
+ {n:'Maison',c:'107,122,79'},{n:'CHEAT',c:'169,59,39'},{n:'Imprévu',c:'140,120,100'}];
+let depVue='mois';
+function depData(){
+  S.depenses=S.depenses||{cats:[],items:[]};
+  if(!S.depenses.cats.length)S.depenses.cats=CATS_DEFAUT.map(x=>({id:uid(),name:x.n,c:x.c}));
+  return S.depenses;
+}
+function depCat(id){return depData().cats.find(c=>c.id===id)||{name:'Sans famille',c:'143,141,125'};}
+function depJour(d){return depData().items.filter(x=>x.date===d);}
+function depMois(d){const m=(d||today()).slice(0,7);return depData().items.filter(x=>x.date.slice(0,7)===m);}
+const depTotal=l=>l.reduce((a,b)=>a+(+b.eur||0),0);
+function eur(v){return (Math.round(v*100)/100).toLocaleString('fr-FR',{minimumFractionDigits:v%1?2:0,maximumFractionDigits:2})+' €';}
+function anneau(parts,total,size){
+  const r=(size-26)/2,c=2*Math.PI*r,cx=size/2;
+  let off=0;
+  const arcs=parts.map(p=>{
+    const len=c*(p.part/100);
+    const seg=`<circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="rgb(${p.c})" stroke-width="17"
+      stroke-dasharray="${len-2} ${c-len+2}" stroke-dashoffset="${-off}"/>`;
+    off+=len;return seg;}).join('');
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}">
+    <g transform="rotate(-90 ${cx} ${cx})">
+      <circle cx="${cx}" cy="${cx}" r="${r}" fill="none" stroke="rgba(255,255,255,.05)" stroke-width="17"/>
+      ${arcs}</g>
+    <text x="50%" y="47%" text-anchor="middle" fill="#EDE9DC" font-family="Cinzel,serif" font-size="${size*.15}">${eur(total)}</text>
+    <text x="50%" y="61%" text-anchor="middle" fill="#8F8D7D" font-family="Barlow Condensed" font-size="${size*.075}"
+      letter-spacing="2">${depVue==='jour'?"AUJOURD'HUI":MON[new Date().getMonth()].toUpperCase()}</text></svg>`;
+}
+function blocDepenses(){
+  const D=depData();
+  const l=depVue==='jour'?depJour(today()):depMois();
+  const tot=depTotal(l);
+  const parts=D.cats.map(c=>{
+    const t=depTotal(l.filter(x=>x.cat===c.id));
+    return {name:c.name,c:c.c,eur:t,part:tot?t/tot*100:0};
+  }).filter(p=>p.eur>0).sort((a,b)=>b.eur-a.eur);
+  const sf=depTotal(l.filter(x=>!D.cats.some(c=>c.id===x.cat)));
+  if(sf>0)parts.push({name:'Sans famille',c:'143,141,125',eur:sf,part:tot?sf/tot*100:0});
+  const jm=new Date().getDate();
+  const ed=editTool.has('dep');
+  const op=openTool==='dep';
+  let h=`<div class="acc pan ${op?'open':''}">
+    <button class="acchead" data-tool="dep"><span class="t">Dépenses</span>
+      <span class="meta">${eur(depTotal(depMois()))}</span><span class="c">›</span></button>
+    <div class="accbody">
+      <div class="seg" style="margin-bottom:16px">
+        <button data-depvue="jour" class="${depVue==='jour'?'sel':''}">Aujourd'hui</button>
+        <button data-depvue="mois" class="${depVue==='mois'?'sel':''}">Ce mois</button></div>`;
+  if(!l.length){
+    h+=`<div class="empty">Aucune dépense ${depVue==='jour'?"aujourd'hui":'ce mois-ci'}.</div>`;
+  }else{
+    h+=`<div style="display:flex;justify-content:center;margin-bottom:14px">${anneau(parts,tot,200)}</div>
+      <div class="deplist">`;
+    parts.forEach(p=>h+=`<div class="depcat">
+      <i style="background:rgb(${p.c})"></i>
+      <span class="dn">${esc(p.name)}</span>
+      <span class="dp">${Math.round(p.part)} %</span>
+      <span class="de">${eur(p.eur)}</span></div>`);
+    h+=`</div>`;
+    if(depVue==='mois')h+=`<div class="mrow" style="margin-top:12px"><span>Moyenne par jour</span>
+      <span class="pct">${eur(tot/jm)}</span></div>
+      <div class="mrow"><span>Projection fin de mois</span>
+      <span class="pct">${eur(tot/jm*new Date(new Date().getFullYear(),new Date().getMonth()+1,0).getDate())}</span></div>`;
+    const ch=parts.find(p=>p.name==='CHEAT');
+    if(ch&&depVue==='mois')h+=`<div class="bexp" style="border-color:rgba(169,59,39,.5);margin-top:12px">
+      <b style="color:var(--rouge)">Le coût de tes écarts</b>Tes CHEAT pèsent ${eur(ch.eur)} ce mois-ci,
+      soit ${Math.round(ch.part)} % de tes dépenses. Un écart ne coûte pas qu'une case rouge.</div>`;
+  }
+  h+=`<button class="add" data-adddep="1" style="margin-top:12px">+ Ajouter une dépense</button>`;
+  if(l.length){
+    h+=`<div class="sub" style="margin:16px 0 7px">${depVue==='jour'?'Aujourd\'hui':'Ce mois'} · ${l.length} ligne${l.length>1?'s':''}</div>`;
+    l.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,ed?200:12).forEach(x=>{
+      const c=depCat(x.cat),d=new Date(x.date);
+      h+=`<div class="depline"><i style="background:rgb(${c.c})"></i>
+        <span class="dl">${esc(x.label)}<em>${DOW[d.getDay()]} ${d.getDate()} ${MSHORT[d.getMonth()]} · ${esc(c.name)}</em></span>
+        <span class="dv">${eur(x.eur)}</span>
+        ${ed?`<button class="del" data-eddep="${x.id}" style="padding:0 5px;font-size:12px">modif</button>
+             <button class="del" data-deldep="${x.id}" style="padding:0 4px;font-size:16px">×</button>`:''}</div>`;});
+  }
+  h+=`<div class="acc pan ${openTool==='depcat'?'open':''}" style="margin-top:12px">
+    <button class="acchead" data-tool="depcat"><span class="t">Familles de dépenses</span>
+      <span class="meta">${D.cats.length}</span><span class="c">›</span></button>
+    <div class="accbody">`;
+  D.cats.forEach(c=>h+=`<div class="depline"><i style="background:rgb(${c.c})"></i>
+    <span class="dl">${esc(c.name)}</span>
+    <button class="del" data-rendepcat="${c.id}" style="padding:0 6px;font-size:12px">renommer</button>
+    <button class="del" data-deldepcat="${c.id}" style="padding:0 4px;font-size:16px">×</button></div>`);
+  h+=`<button class="add" data-adddepcat="1">+ Créer une famille</button></div></div>`;
+  if(l.length)h+=`<button class="edtog${ed?' on':''}" data-edtool="dep">${ed?'Terminer':'Modifier les entrées'}</button>`;
+  return h+`</div></div>`;
+}
+function formDep(id){
+  const D=depData();
+  const ex=id?D.items.find(x=>x.id===id):null;
+  sheetOpen(`<h3>${ex?'Modifier la dépense':'Nouvelle dépense'}</h3>
+    <label>Quoi</label><input type="text" id="d-lab" autocomplete="off" placeholder="Courses Leclerc" value="${ex?esc(ex.label):''}">
+    <div class="two"><div><label>Montant (€)</label>
+      <input type="number" step="0.01" id="d-eur" inputmode="decimal" value="${ex?ex.eur:''}"></div>
+      <div><label>Date</label><input type="date" id="d-date" value="${ex?ex.date:today()}"></div></div>
+    <label>Famille</label>
+    <div class="choice" id="dcat">${D.cats.map(c=>
+      `<button data-c="${c.id}" class="${ex&&ex.cat===c.id?'sel':''}"
+        style="${(ex&&ex.cat===c.id)?`border-color:rgb(${c.c});color:rgb(${c.c})`:''}">${esc(c.name)}</button>`).join('')}</div>
+    <div class="btnrow"><button class="btn" id="f-ok">${ex?'Enregistrer':'Ajouter'}</button>
+      <button class="btn ghost" id="f-no">Annuler</button></div>`);
+  let cat=ex?ex.cat:(D.cats[0]&&D.cats[0].id);
+  const paint=()=>document.querySelectorAll('#dcat button').forEach(b=>{
+    const on=b.dataset.c===cat,c=depCat(b.dataset.c);
+    b.classList.toggle('sel',on);
+    b.style.cssText=on?`border-color:rgb(${c.c});color:rgb(${c.c})`:'';});
+  paint();
+  document.querySelectorAll('#dcat button').forEach(b=>b.onclick=()=>{cat=b.dataset.c;paint();});
+  document.getElementById('f-no').onclick=sheetClose;
+  document.getElementById('f-ok').onclick=()=>{
+    const lab=document.getElementById('d-lab').value.trim();
+    const v=+document.getElementById('d-eur').value;
+    if(!lab){toast('Il manque la description');return;}
+    if(!v){toast('Il manque le montant');return;}
+    const e={id:ex?ex.id:uid(),label:lab,eur:v,cat:cat,date:document.getElementById('d-date').value||today()};
+    if(ex)Object.assign(ex,e);else D.items.push(e);
+    save();sheetClose();render();toast(ex?'Modifiée':'Dépense ajoutée');};
+  setTimeout(()=>{const f=document.getElementById('d-lab');if(f)f.focus();},90);
+}
+
 /* ================= ÇA MONTE ================= */
 let calmTimer=null,calmPhase=null;
 function calmOuvrir(){
@@ -2719,7 +2876,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='4.7';
+const VERSION='4.8';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -3057,6 +3214,20 @@ document.addEventListener('click',e=>{
   if(d.deltool){if(confirm('Supprimer cet outil et toutes ses entrées ?')){
     S.customTools=S.customTools.filter(c=>c.k!==d.deltool);delete S.tools[d.deltool];
     if(openTool===d.deltool)openTool=null;save();renderTools();}return;}
+  if(d.adddep)return formDep();
+  if(d.eddep)return formDep(d.eddep);
+  if(d.deldep){if(confirm('Supprimer cette dépense ?')){
+    S.depenses.items=S.depenses.items.filter(x=>x.id!==d.deldep);save();render();}return;}
+  if(d.depvue){depVue=d.depvue;return renderTools();}
+  if(d.adddepcat){const n=prompt('Nom de la famille');
+    if(n&&n.trim()){const pal=['123,166,92','201,162,39','110,139,214','168,131,74','142,153,214','186,190,196','107,122,79','140,120,100'];
+      S.depenses.cats.push({id:uid(),name:n.trim(),c:pal[S.depenses.cats.length%pal.length]});
+      save();renderTools();}return;}
+  if(d.rendepcat){const c=S.depenses.cats.find(x=>x.id===d.rendepcat);
+    if(c){const n=prompt('Nouveau nom',c.name);if(n&&n.trim()){c.name=n.trim();save();renderTools();}}return;}
+  if(d.deldepcat){const n=S.depenses.items.filter(x=>x.cat===d.deldepcat).length;
+    if(confirm(n?`${n} dépense(s) utilisent cette famille. Elles passeront en « Sans famille ». Continuer ?`:'Supprimer cette famille ?')){
+      S.depenses.cats=S.depenses.cats.filter(x=>x.id!==d.deldepcat);save();renderTools();}return;}
   if(d.edtool){if(editTool.has(d.edtool))editTool.delete(d.edtool);else editTool.add(d.edtool);
     return renderTools();}
   if(d.edprov)return formProverb(+d.edprov);
