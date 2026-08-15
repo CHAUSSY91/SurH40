@@ -438,6 +438,7 @@ span.chip{cursor:default}
 .duolbl{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.14em;
   font-size:10.5px;color:var(--dim);text-align:center;line-height:1.35}
 .ecart{padding:16px}
+.ecfile{margin:9px 0 0;font-size:13px;font-weight:300;color:var(--rouge)}
 .ecprop{margin:10px 0 0;font-size:13px;font-weight:300;color:var(--dim)}
 .ecprop b{color:var(--or);font-weight:600}
 .note{padding:15px 16px;margin-bottom:9px}
@@ -545,6 +546,29 @@ span.chip{cursor:default}
 .calm.on{display:flex}
 .calmclose{position:absolute;top:14px;right:16px;background:none;border:0;color:var(--gris,#3A3D33);
   font-size:30px;cursor:pointer;line-height:1;opacity:.5}
+.calmbody{width:min(460px,calc(100% - 40px));display:flex;flex-direction:column;
+  align-items:center;gap:22px;text-align:center}
+.calmtitre{font-family:'Cinzel',serif;font-size:26px;letter-spacing:.12em;color:var(--marbre);margin:0}
+.calmchoix{display:flex;flex-direction:column;gap:11px;width:100%}
+.calmchoix button{padding:18px 16px;border-radius:var(--r);border:1px solid var(--trait);
+  background:rgba(255,255,255,.04);color:var(--marbre);cursor:pointer;text-align:left}
+.calmchoix button:active{background:rgba(255,255,255,.09)}
+.calmchoix b{display:block;font-family:'Cinzel',serif;font-size:17px;letter-spacing:.07em;font-weight:500}
+.calmchoix span{display:block;font-size:13px;color:var(--dim);font-weight:300;margin-top:3px}
+.calmchoix .mini{padding:13px 16px}
+.calmchoix .mini b{font-size:14px;color:var(--dim);font-family:'Barlow Condensed',sans-serif;
+  text-transform:uppercase;letter-spacing:.18em}
+.consigne{font-family:'Cinzel',serif;font-size:21px;line-height:1.5;color:var(--marbre);margin:0;white-space:pre-line}
+.calmsous{font-size:15px;color:var(--dim);font-weight:300;margin:0;white-space:pre-line}
+.calmgros{font-family:'Cinzel',serif;font-size:64px;color:var(--or);line-height:1;margin:0}
+.calmgroslbl{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.24em;
+  font-size:11px;color:var(--dim);margin:-14px 0 0}
+.calmnote{width:100%}
+.calmnote input{margin-bottom:10px}
+.calmlien{background:none;border:0;color:var(--bronze);font-size:13.5px;cursor:pointer;
+  text-decoration:underline;text-underline-offset:3px;padding:4px}
+.calmplaf{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.12em;
+  color:var(--dim);margin:0}
 .calmwrap{display:flex;flex-direction:column;align-items:center;gap:26px}
 .ring{width:150px;height:150px;border-radius:50%;
   border:2px solid rgba(201,162,39,.55);
@@ -555,9 +579,9 @@ span.chip{cursor:default}
 .ring span{font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.3em;
   font-size:13px;color:var(--or)}
 .calmsec{font-family:'Cinzel',serif;font-size:22px;color:rgba(237,233,220,.35);letter-spacing:.1em}
-.calmfin{display:none;flex-direction:column;gap:11px;width:min(420px,calc(100% - 48px));margin-top:34px}
-.calm.fin .calmfin{display:flex;animation:fade .4s ease}
-.calm.fin .calmwrap{display:none}
+.calmfin{display:flex;flex-direction:column;gap:11px;width:100%;margin-top:8px}
+
+
 .calmfin button{padding:20px;border-radius:var(--r);border:1px solid var(--trait);
   background:rgba(255,255,255,.04);color:var(--marbre);cursor:pointer;
   font-family:'Cinzel',serif;font-size:16px;letter-spacing:.08em}
@@ -676,15 +700,7 @@ footer .btn{flex:1;min-width:135px}
 
 <div class="calm" id="calm">
   <button class="calmclose" id="calmx" aria-label="Fermer">×</button>
-  <div class="calmwrap">
-    <div class="ring" id="ring"><span id="ringtxt"></span></div>
-    <div class="calmsec" id="calmsec"></div>
-  </div>
-  <div class="calmfin" id="calmfin">
-    <button data-col="passe">C'est passé</button>
-    <button data-col="report">Je reporte</button>
-    <button data-col="craque">J'ai craqué</button>
-  </div>
+  <div class="calmbody" id="calmbody"></div>
 </div>
 
 <div class="sheet" id="sheet"><div class="sheetbox" id="sheetbox"></div></div>
@@ -703,7 +719,7 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  depenses:{cats:[],items:[]},coleres:[],gcal:{on:false,events:[],synced:null},poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  depenses:{cats:[],items:[]},coleres:[],plafonds:{},tireDepart:null,gcal:{on:false,events:[],synced:null},poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,cmPompes:20,cmGainage:45,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
@@ -822,6 +838,7 @@ const PIQUES=[
  "Un de plus et la note arrive. Sans négociation possible.",
  "Ce n'est pas une menace, c'est un contrat. Que tu as signé."];
 const SERIE_REC=7;
+const PUN_MAX=3;
 const SERIE_PROPRE=15;
 const TAUNTS=[
  "Tu tombes dans le nihilisme ou quoi ? Branleur !",
@@ -1012,7 +1029,11 @@ function checkDebt(){
   S.credits=S.credits||{rec:0,pun:0};
   let maj=false;
   const e=ecartsWindow();
-  if(e-(S.baseline||0)>=S.settings.seuil){S.credits.pun++;S.baseline=e;maj=true;}
+  const enFile=(S.credits.pun||0)+(S.awards||[]).filter(a=>a.kind==='pun'&&!a.done).length;
+  if(e-(S.baseline||0)>=S.settings.seuil){
+    if(enFile<PUN_MAX){S.credits.pun++;S.baseline=e;maj=true;}
+    /* file saturée : on ne perd rien, le compteur reste plein jusqu'à ce que tu vides */
+  }
   const st=streakDays(),paliers=Math.floor(st/SERIE_REC);
   if(paliers>(S.recGiven||0)){S.credits.rec+=paliers-(S.recGiven||0);S.recGiven=paliers;maj=true;}
   if(paliers<(S.recGiven||0)){S.recGiven=paliers;maj=true;}
@@ -1625,12 +1646,12 @@ function renderGoals(){
   h+=blocPoints('rec',cr.rec,S.recPool);
 
   /* écarts, juste avant les punitions */
-  const punEnAttente=cr.pun>0;
-  /* tant que la punition n'est pas choisie et réglée, la jauge reste pleine */
-  const net=(punEnAttente||(S.awards||[]).some(a=>a.kind==='pun'&&!a.done))
-    ?S.settings.seuil:Math.max(0,ec-(S.baseline||0));
+  /* le compteur continue de tourner même pendant une punition : aucune fenêtre de gratuité */
+  const net=Math.max(0,ec-(S.baseline||0));
+  const enCoursPun=(S.awards||[]).filter(a=>a.kind==='pun'&&!a.done);
+  const file=(cr.pun||0)+enCoursPun.length;
+  const sature=file>=PUN_MAX;
   const rest=Math.max(0,S.settings.seuil-net);
-  const punEnCours=(S.awards||[]).find(a=>a.kind==='pun'&&!a.done);
   h+=`<div class="block"><h3>Les écarts</h3>
     <div class="ecart pan">
       <div class="statline"><span class="n">${net} / ${S.settings.seuil}</span>
@@ -1638,11 +1659,13 @@ function renderGoals(){
       <div class="bar" style="height:9px"><i class="${net>=S.settings.seuil?'low':net>=S.settings.seuil-1?'mid':''}" style="width:${Math.min(100,net/S.settings.seuil*100)}%"></i></div>
       <p class="ecexp">Une <b>journée</b> compte pour un écart si tu y as noté un CHEAT ou laissé un Bad Habit non tenu.
         Peu importe le nombre de lignes : c'est le jour qui compte. Une journée où tu n'as rien saisi ne compte pas.</p>
-      <p class="ecpique">${punEnCours?`Une punition est en cours : ${esc(punEnCours.label)}.`
-        :cr.pun>0?"Le compte y est. Choisis ta punition ci-dessous."
+      <p class="ecpique">${sature?`File pleine : ${PUN_MAX} punitions en attente. Vide-la avant d'en cumuler d'autres.`
+        :cr.pun>0?`${cr.pun} punition${cr.pun>1?'s':''} à choisir ci-dessous.`
         :rest===0?"Le compte y est. La punition arrive."
         :rest===1?PIQUES[new Date().getDate()%PIQUES.length]
         :`Encore ${rest} journées d'écart avant la note.`}</p>
+      ${file?`<p class="ecfile">En attente : ${file} punition${file>1?'s':''}. Le compteur continue de tourner —
+        un écart de plus pendant qu'une dette traîne en ajoute une autre${sature?`, et rien ne se perd : dès que tu en règles une, la suivante prend sa place`:''}.</p>`:''}
       <p class="ecprop">Série propre : <b>${sp} jour${sp>1?'s':''}</b> sans écart · récompense d'exception à ${SERIE_PROPRE}.
         ${(S.baseline||0)>0?`<br>${ec} écarts au total sur ${S.settings.window} jours, dont ${S.baseline} déjà sanctionnés.`:''}</p></div></div>`;
 
@@ -1673,25 +1696,26 @@ function renderGoals(){
 
 function blocPoints(kind,credit,pool){
   const rec=kind==='rec';
-  const en=(S.awards||[]).find(a=>a.kind===kind&&!a.done);
+  const tous=(S.awards||[]).filter(a=>a.kind===kind&&!a.done);
+  const en=tous[0];
   const faits=(S.awards||[]).filter(a=>a.done&&(a.kind===kind||(rec&&a.kind==='pop')));
   let h=`<div class="block${rec?'':' bad'}"><h3>${rec?'Récompenses':'Punitions'}</h3>`;
 
-  if(credit>0&&!en){
+  if(credit>0){
     h+=`<div class="credit${rec?'':' pun'}">
       <h4>${credit} ${rec?'récompense':'punition'}${credit>1?'s':''} à choisir</h4>
       <p>${rec?`Tu as tenu ${SERIE_REC} jours. Choisis ta ligne dans la liste : elle passera en cours.`
         :`Le seuil d'écarts est franchi. Choisis la ligne que tu vas exécuter, dans les ${S.settings.delai} jours.`}</p></div>`;
   }
-  if(en){
-    const late=en.due&&today()>en.due;
+  tous.forEach((a,k)=>{
+    const late=a.due&&today()>a.due;
     h+=`<div class="credit${rec?'':' pun'}${late?' late':''}">
-      <h4>En cours${late?' · en retard':''}</h4><p>${esc(en.label)}</p>
-      ${en.due?`<p class="sub" style="margin-top:6px">Échéance : ${en.due}</p>`:''}
-      <div class="btnrow"><button class="btn" data-adone="${en.id}">${rec?'Savourée':'Réglée'}</button>
-        <button class="btn ghost" data-aundo="${en.id}">Changer de ligne</button></div></div>`;
-  }
-  const dispo=credit>0&&!en;
+      <h4>${tous.length>1?`En cours · ${k+1} sur ${tous.length}`:'En cours'}${late?' · en retard':''}</h4>
+      <p>${esc(a.label)}</p>
+      ${a.due?`<p class="sub" style="margin-top:6px">Échéance : ${a.due}</p>`:''}
+      <div class="btnrow"><button class="btn" data-adone="${a.id}">${rec?'Savourée':'Réglée'}</button>
+        <button class="btn ghost" data-aundo="${a.id}">Changer de ligne</button></div></div>`;});
+  const dispo=credit>0;
   const opP=openPool.has(kind)||dispo;
   h+=`<div class="acc pan ${opP?'open':''}">
     <button class="acchead" data-pool="${kind}"><span class="t">${rec?'Catalogue des récompenses':'Catalogue des punitions'}</span>
@@ -2522,93 +2546,285 @@ function formDep(id){
 }
 
 /* ================= ÇA MONTE ================= */
-let calmTimer=null,calmPhase=null;
-function calmOuvrir(){
-  const c=document.getElementById('calm'),r=document.getElementById('ring'),
-        t=document.getElementById('ringtxt'),sec=document.getElementById('calmsec');
-  c.classList.add('on');c.classList.remove('fin');
-  if(navigator.vibrate)navigator.vibrate(18);
-  let reste=60,gonfle=false;
-  const doux=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const souffle=()=>{
-    gonfle=!gonfle;
-    if(!doux)r.classList.toggle('big',gonfle);
-    t.textContent=gonfle?'inspire':'expire';
-    if(navigator.vibrate)navigator.vibrate(gonfle?12:6);
-  };
-  t.textContent='inspire';if(!doux)r.classList.add('big');gonfle=true;
-  sec.textContent='60';
-  calmPhase=setInterval(souffle,5000);
-  calmTimer=setInterval(()=>{
-    reste--;sec.textContent=reste;
-    if(reste<=0)calmFin();
-  },1000);
+/* Module d'observation. Ne touche jamais aux écarts, aux séries, aux punitions
+   ni au score. Aucun mot de jugement, aucun son, aucune vibration. */
+const CM_TYPES=[
+ {k:'chauffe',t:'Ça chauffe',s:'colère, tension, agacement'},
+ {k:'creuse', t:'Ça creuse', s:'envie de manger, de boire'},
+ {k:'tire',   t:'Ça tire',   s:'pulsion, écran, scroll'},
+ {k:'tourne', t:'Ça tourne', s:'ruminations, ça boucle'}];
+const CM_CAT=[['fatigue','Fatigue'],['tension','Tension'],['ennui','Ennui'],['fdj','FDJ']];
+let cm={};          /* épisode en cours */
+let cmT=null,cmP=null;
+
+/* la journée se clôture à 23h */
+function jourLog(d){
+  const x=d?new Date(d):new Date();
+  if(x.getHours()>=23)x.setDate(x.getDate()+1);
+  return iso(x);
 }
-function calmFin(){
-  clearInterval(calmTimer);clearInterval(calmPhase);
-  document.getElementById('calm').classList.add('fin');
-  if(navigator.vibrate)navigator.vibrate([30,60,30]);
+function cmBody(){return document.getElementById('calmbody');}
+function cmStop(){clearInterval(cmT);clearInterval(cmP);cmT=null;cmP=null;}
+function calmOuvrir(){
+  cm={};cmStop();
+  document.getElementById('calm').classList.add('on');
+  cmChoix();
 }
 function calmFermer(){
-  clearInterval(calmTimer);clearInterval(calmPhase);
-  const c=document.getElementById('calm');
-  c.classList.remove('on','fin');
-  document.getElementById('ring').classList.remove('big');
+  cmStop();
+  if(cm.id&&!cm.close)cmLog('abandon');
+  document.getElementById('calm').classList.remove('on');
+  cm={};render();
 }
-function calmNoter(issue){
+function cmLog(sortie,extra){
+  if(!cm.id)return;
+  cm.close=true;
   S.coleres=S.coleres||[];
-  S.coleres.push({id:uid(),ts:new Date().toISOString(),issue});
-  save();calmFermer();
-  toast(issue==='passe'?'Bien joué':issue==='report'?'Noté, on y revient':'Noté, sans jugement');
-  render();
+  S.coleres.push(Object.assign({
+    id:cm.id,type:cm.type,categorie:cm.cat||null,
+    ts:cm.debut,jour:jourLog(cm.debut),
+    duree_tenue_s:Math.round((Date.now()-new Date(cm.debut))/1000),
+    protocole_complete:!!cm.complete,relances:cm.relances||0,
+    sortie:sortie,note:cm.note||null,
+    plafond_annonce:cm.type==='creuse'?(plafondDuJour()):null,
+    consommes:cm.type==='creuse'?(consoDuJour()):null
+  },extra||{}));
+  save();
 }
-/* --- historique --- */
+function cmDemarre(type){
+  cm={id:uid(),type:type,debut:new Date().toISOString(),relances:0};
+}
+
+/* ---------- écran de choix ---------- */
+function cmChoix(){
+  cmStop();
+  cmBody().innerHTML=`<h2 class="calmtitre">Ça monte</h2>
+    <div class="calmchoix">
+      ${CM_TYPES.map(t=>`<button data-cm="${t.k}"><b>${t.t}</b><span>${t.s}</span></button>`).join('')}
+      <button class="mini" data-cm="annonce"><b>J'annonce · plafond du soir</b></button>
+    </div>`;
+}
+
+/* ---------- briques ---------- */
+function cmTimer(sec,fin){
+  const el=document.getElementById('cmsec');
+  let r=sec;
+  if(el)el.textContent=cmFmt(r);
+  cmT=setInterval(()=>{
+    r--;
+    const e=document.getElementById('cmsec');
+    if(e)e.textContent=cmFmt(r);
+    if(r<=0){cmStop();cm.complete=true;fin();}
+  },1000);
+}
+const cmFmt=s=>s>=60?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:String(s);
+function cmSortie(boutons){
+  const z=document.getElementById('cmfin');
+  if(z)z.innerHTML=boutons.map(b=>`<button data-cmo="${b[0]}">${b[1]}</button>`).join('');
+}
+
+/* ---------- 1. Ça chauffe : respiration 4/6, 6 cycles ---------- */
+function cmChauffe(){
+  cmDemarre('chauffe');
+  cmBody().innerHTML=`<div class="calmwrap">
+      <div class="ring" id="ring"><span id="ringtxt">inspire</span></div>
+      <div class="calmsec" id="cmsec">60</div></div>
+    <p class="calmsous">Tu peux dire la même chose dans 5 minutes.</p>
+    <div class="calmfin" id="cmfin"></div>`;
+  cmSouffle(60,()=>cmChauffeFin());
+}
+function cmSouffle(sec,fin){
+  const r=document.getElementById('ring'),t=document.getElementById('ringtxt');
+  const doux=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let phase=0; /* 0 = inspire 4 s, 1 = expire 6 s */
+  const applique=()=>{
+    if(t)t.textContent=phase?'expire':'inspire';
+    if(r&&!doux){r.style.transitionDuration=(phase?6:4)+'s';r.classList.toggle('big',!phase);}
+  };
+  applique();
+  let reste=phase?6:4;
+  cmP=setInterval(()=>{
+    reste--;
+    if(reste<=0){phase=1-phase;reste=phase?6:4;applique();}
+  },1000);
+  cmTimer(sec,fin);
+}
+function cmChauffeFin(){
+  const r=document.getElementById('ring');if(r)r.classList.remove('big');
+  const t=document.getElementById('ringtxt');if(t)t.textContent='';
+  cmSortie([['passe',"C'est passé"],['reporte','Je reporte'],['craque',"J'ai craqué"]]);
+}
+
+function cmReporte(){
+  cmStop();
+  cmBody().innerHTML=`<div class="calmchoix">
+    <button data-cmplus="1"><b>+ 60 s</b><span>on refait un tour de souffle</span></button>
+    <button data-cmeloigne="1"><b>Je m'éloigne 5 min</b><span>tu sors, l'appli t'attend</span></button>
+  </div>`;
+}
+function cmChauffePlus(){
+  cmBody().innerHTML=`<div class="calmwrap">
+      <div class="ring" id="ring"><span id="ringtxt">inspire</span></div>
+      <div class="calmsec" id="cmsec">60</div></div>
+    <p class="calmsous">Tu peux dire la même chose dans 5 minutes.</p>
+    <div class="calmfin" id="cmfin"></div>`;
+  cmSouffle(60,()=>cmChauffeFin());
+}
+
+/* ---------- 2. Ça creuse ---------- */
+function cmCreuseEntree(){
+  cmDemarre('creuse');
+  cmBody().innerHTML=`<h2 class="calmtitre">C'est quoi ?</h2>
+    <div class="calmchoix">${CM_CAT.map(c=>`<button data-cmcat="${c[0]}"><b>${c[1]}</b></button>`).join('')}</div>`;
+}
+function cmCreuse(cat){
+  cm.cat=cat;
+  const pl=plafondDuJour();
+  cmBody().innerHTML=`<p class="consigne">Un grand verre d'eau.\nSors de la pièce.</p>
+    <div class="calmsec" id="cmsec">4:00</div>
+    ${pl!==null?`<p class="calmplaf">Plafond annoncé : ${pl} — consommés : ${consoDuJour()}</p>`:''}
+    <div class="calmfin" id="cmfin"></div>`;
+  cmTimer(240,()=>cmSortie([['passe',"C'est passé"],['consomme',"J'ai consommé"]]));
+}
+
+/* ---------- 3. Ça tire ---------- */
+function joursPropres(){
+  const l=(S.coleres||[]).filter(c=>c.sortie==='arrive').sort((a,b)=>b.ts.localeCompare(a.ts));
+  const dep=l.length?new Date(l[0].ts):(S.tireDepart?new Date(S.tireDepart):null);
+  if(!dep){S.tireDepart=new Date().toISOString();save();return 0;}
+  return Math.max(0,Math.floor((Date.now()-dep)/86400000));
+}
+function cmTire(relance){
+  if(!relance)cmDemarre('tire');
+  const p=(S.settings.cmPompes||20),g=(S.settings.cmGainage||45);
+  cmBody().innerHTML=`<p class="consigne">Sors de la pièce. Téléphone posé.\n${p} pompes ou ${g} s de gainage.</p>
+    <p class="calmgros">${joursPropres()}</p><p class="calmgroslbl">jours</p>
+    <p class="calmsous">Demain matin, tu te réveilles comment ?</p>
+    <div class="calmsec" id="cmsec">3:00</div>
+    <div class="calmfin" id="cmfin"></div>`;
+  cmTimer(180,()=>cmSortie([['passe',"C'est passé"],['encore','Encore là'],['arrive',"C'est arrivé"]]));
+}
+
+/* ---------- 4. Ça tourne : ancrage 5-4-3 ---------- */
+const CM_ANCRAGE=['5 choses que tu vois.','4 choses que tu entends.','3 choses que tu touches.'];
+function cmTourne(etape,relance){
+  if(etape===0&&!relance)cmDemarre('tourne');
+  if(etape>=CM_ANCRAGE.length){cm.complete=true;return cmTourneFin();}
+  cmBody().innerHTML=`<p class="consigne">${CM_ANCRAGE[etape]}</p>
+    <p class="calmsous">Touche l'écran quand c'est fait.</p>
+    <div class="calmfin" id="cmfin"><button data-cmnext="${etape+1}">Suivant</button></div>`;
+}
+function cmTourneFin(){
+  cmBody().innerHTML=`<div class="calmfin" id="cmfin"></div>
+    <button class="calmlien" data-cmnote="1">noter la pensée</button>`;
+  cmSortie([['passe',"C'est passé"],['encore','Encore là']]);
+}
+function cmNoteChamp(){
+  cmBody().innerHTML=`<p class="calmsous">Trois mots, pas plus.</p>
+    <div class="calmnote"><input type="text" id="cmnotein" maxlength="60" autocomplete="off"></div>
+    <div class="calmfin"><button data-cmnoteok="1">Enregistrer</button></div>`;
+  setTimeout(()=>{const f=document.getElementById('cmnotein');if(f)f.focus();},80);
+}
+
+/* ---------- Je m'éloigne 5 min ---------- */
+function cmEloigne(){
+  cmBody().innerHTML=`<p class="consigne">Reviens quand c'est fini.</p>
+    <div class="calmsec" id="cmsec">5:00</div>`;
+  cmTimer(300,()=>{cm.complete=true;cmLog('eloigne');calmFermer();});
+}
+
+/* ---------- plafond alcool ---------- */
+function plafondDuJour(){const p=(S.plafonds||{})[jourLog()];return p===undefined?null:p.max;}
+function consoDuJour(){const p=(S.plafonds||{})[jourLog()];return p?(p.n||0):0;}
+function cmAnnonce(){
+  const j=jourLog(),cur=(S.plafonds||{})[j];
+  cmBody().innerHTML=`<h2 class="calmtitre">Ce soir, plafond ?</h2>
+    <div class="calmchoix">${[0,1,2,3].map(n=>
+      `<button data-cmplaf="${n}"><b>${n}</b></button>`).join('')}</div>
+    ${cur?`<p class="calmplaf">Annoncé : ${cur.max} — consommés : ${cur.n||0}</p>
+      <div class="calmfin"><button data-cmverre="1">+ 1 verre</button></div>`:''}`;
+}
+
+/* ---------- message final court ---------- */
+function cmFinal(txt){
+  cmBody().innerHTML=`<p class="calmsous">${txt}</p>`;
+  setTimeout(()=>{document.getElementById('calm').classList.remove('on');cm={};render();},2200);
+}
+
+/* --- récap : les chiffres, rien d'autre --- */
 function colHeure(c){return new Date(c.ts).getHours();}
+function cmNom(k){const t=CM_TYPES.find(x=>x.k===k);return t?t.t:'Épisode';}
+const CM_POSITIF=['passe','retombe','eloigne'];
 function blocColeres(){
   const l=(S.coleres||[]).slice().sort((a,b)=>a.ts.localeCompare(b.ts));
   const op=openTool==='col';
   let h=`<div class="acc pan ${op?'open':''}">
-    <button class="acchead" data-tool="col"><span class="t">Historique des colères</span>
+    <button class="acchead" data-tool="col"><span class="t">Ça monte · récap</span>
       <span class="meta">${l.length||'—'}</span><span class="c">›</span></button>
     <div class="accbody">
-      <p class="rule">Chaque appui sur « Ça monte » est horodaté. Au bout de quelques semaines,
-        les créneaux ressortent tout seuls : ce n'est pas ta colère qu'il faut réparer, c'est le moment de journée qui la produit.</p>`;
+      <p class="rule">Sept jours glissants. Chaque déclenchement est horodaté.
+Aucun de ces chiffres n'entre dans tes scores, tes séries ou tes punitions.</p>`;
   if(!l.length){
-    h+=`<div class="empty">Rien pour l'instant. Le bouton rouge est en bas de l'accueil.</div></div></div>`;
+    h+=`<div class="empty">Rien pour l'instant. Le bouton est en bas de l'accueil.</div></div></div>`;
     return h;
   }
-  const j30=l.filter(c=>c.ts.slice(0,10)>=shift(new Date(),-30));
-  const n=i=>j30.filter(c=>c.issue===i).length;
-  h+=`<div class="kpis" style="margin-bottom:14px">
-    <div class="pan"><div class="v">${j30.length}</div><div class="l">30<br>jours</div></div>
-    <div class="pan"><div class="v" style="color:var(--vert)">${n('passe')}</div><div class="l">C'est<br>passé</div></div>
-    <div class="pan"><div class="v" style="color:var(--rouge)">${n('craque')}</div><div class="l">J'ai<br>craqué</div></div></div>`;
-  /* créneaux de 2 h */
+  const j7=l.filter(c=>(c.jour||c.ts.slice(0,10))>=shift(new Date(),-6));
+  /* par type */
+  h+=`<div class="sub" style="margin-bottom:8px">Par type · 7 jours</div>`;
+  const parType=CM_TYPES.map(t=>({t,n:j7.filter(c=>c.type===t.k).length}));
+  const sans=j7.filter(c=>!c.type).length;
+  const mx=Math.max(1,...parType.map(x=>x.n),sans);
+  h+=`<div class="deplist">`;
+  parType.forEach(x=>{
+    const pos=j7.filter(c=>c.type===x.t.k&&CM_POSITIF.includes(c.sortie)).length;
+    h+=`<div class="depcat"><i style="background:var(--or)"></i>
+      <span class="dn">${x.t.t}</span>
+      <span class="dp">${x.n?Math.round(pos/x.n*100)+' %':'—'}</span>
+      <span class="de">${x.n}</span></div>`;});
+  if(sans)h+=`<div class="depcat"><i style="background:var(--dim)"></i>
+    <span class="dn">Avant le classement</span><span class="dp">—</span><span class="de">${sans}</span></div>`;
+  h+=`</div><p class="empty" style="margin:6px 0 14px">Le pourcentage est le taux de passage : sorties sans consommation sur le total.</p>`;
+  /* par heure — la vue la plus importante */
   const cr=Array.from({length:12},()=>0);
   l.forEach(c=>cr[Math.floor(colHeure(c)/2)]++);
-  const mx=Math.max(...cr,1);
-  h+=`<div class="sub" style="margin-bottom:8px">Par créneau horaire</div>
+  const mxh=Math.max(...cr,1);
+  h+=`<div class="sub" style="margin-bottom:8px">Par créneau horaire · tout l'historique</div>
     <div class="crgrid">${cr.map((v,k)=>`<div class="crcol" title="${k*2}h-${k*2+2}h">
-      <i style="height:${v?Math.max(6,v/mx*70):2}px;background:${v===mx&&v>0?'var(--rouge)':'rgba(169,59,39,.45)'}"></i>
+      <i style="height:${v?Math.max(6,v/mxh*70):2}px;background:${v===mxh&&v>0?'var(--or)':'rgba(201,162,39,.4)'}"></i>
       <span>${k*2}</span></div>`).join('')}</div>`;
-  const pire=cr.indexOf(mx);
-  if(l.length>=5)h+=`<div class="bexp" style="border-color:rgba(169,59,39,.5)">
-    <b style="color:var(--rouge)">Ton créneau</b>Le plus chargé est <b style="color:var(--marbre)">${pire*2}h – ${pire*2+2}h</b>.
-    Regarde ce qui s'y passe : ce qui se règle, c'est l'organisation de ce moment-là, pas la volonté.</div>`;
-  /* par jour de semaine */
-  const dw=[0,0,0,0,0,0,0];l.forEach(c=>dw[new Date(c.ts).getDay()]++);
-  const mxd=Math.max(...dw,1);
-  h+=`<div class="sub" style="margin:16px 0 8px">Par jour de semaine</div>
-    <div class="crgrid">${[1,2,3,4,5,6,0].map(k=>`<div class="crcol">
-      <i style="height:${dw[k]?Math.max(6,dw[k]/mxd*60):2}px;background:rgba(169,59,39,.45)"></i>
-      <span>${JOURS[k]}</span></div>`).join('')}</div>`;
+  const pire=cr.indexOf(mxh);
+  if(l.length>=5)h+=`<div class="bexp" style="border-color:rgba(201,162,39,.4);margin-top:12px">
+    <b style="color:var(--or)">Ton créneau</b>Le plus chargé est <b style="color:var(--marbre)">${pire*2}h – ${pire*2+2}h</b>.</div>`;
+  /* Ça creuse : par catégorie */
+  const cz=j7.filter(c=>c.type==='creuse'&&c.categorie);
+  if(cz.length){
+    h+=`<div class="sub" style="margin:18px 0 8px">Ça creuse · pourquoi</div><div class="deplist">`;
+    CM_CAT.forEach(c=>{const n=cz.filter(x=>x.categorie===c[0]).length;
+      if(n)h+=`<div class="depcat"><i style="background:var(--bronze)"></i>
+        <span class="dn">${c[1]}</span><span class="de">${n}</span></div>`;});
+    h+=`</div>`;
+  }
+  /* Ça tire : jours propres */
+  if(l.some(c=>c.type==='tire')||S.tireDepart)
+    h+=`<div class="mrow" style="margin-top:14px"><span>Ça tire · jours</span>
+      <span class="pct" style="color:var(--or)">${joursPropres()}</span></div>`;
+  /* notes */
+  const notes=l.filter(c=>c.note).slice(-6).reverse();
+  if(notes.length){
+    h+=`<div class="sub" style="margin:18px 0 7px">Pensées notées</div>`;
+    notes.forEach(c=>{const d=new Date(c.ts);
+      h+=`<div class="mrow"><span style="color:var(--dim)">${esc(c.note)}</span>
+        <span class="pct">${d.getDate()}/${d.getMonth()+1}</span></div>`;});
+  }
+  /* derniers épisodes */
   h+=`<div class="sub" style="margin:18px 0 7px">Derniers épisodes</div>`;
-  l.slice().reverse().slice(0,10).forEach(c=>{
+  const LIB={passe:'passé',retombe:'retombé',encore:'encore',consomme:'consommé',
+    arrive:'arrivé',sorti:'sorti',eloigne:'éloigné',reporte:'reporté',craque:'craqué',abandon:'sorti avant'};
+  l.slice().reverse().slice(0,12).forEach(c=>{
     const d=new Date(c.ts);
-    const lab={passe:'c\'est passé',report:'reporté',craque:'craqué'}[c.issue];
-    const col={passe:'var(--vert)',report:'var(--or)',craque:'var(--rouge)'}[c.issue];
-    h+=`<div class="mrow"><span>${DOW[d.getDay()]} ${d.getDate()} ${MSHORT[d.getMonth()]} · ${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')}</span>
-      <span class="pct" style="color:${col}">${lab}
+    h+=`<div class="mrow"><span>${cmNom(c.type)}
+        <em style="font-style:normal;color:var(--dim)"> · ${DOW[d.getDay()]} ${d.getDate()} ${MSHORT[d.getMonth()]} ${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')}</em></span>
+      <span class="pct">${LIB[c.sortie]||c.sortie||'—'}
       <button class="del" data-delcol="${c.id}" style="padding:0 6px;font-size:15px">×</button></span></div>`;});
   return h+`</div></div>`;
 }
@@ -2919,7 +3135,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='4.9.1';
+const VERSION='5.0';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -2968,6 +3184,14 @@ function renderSet(){
       <p class="empty" style="margin-top:10px">Google affichera un avertissement « application non validée » : c'est normal,
         l'appli n'est publiée que pour toi. Clique sur « Paramètres avancés » puis « Continuer ».</p>`}
     </div>
+
+  <div class="block"><h3>Ça monte</h3>
+    <div class="empty">Le protocole « Ça tire » propose un effort physique. Ajuste-le à ton niveau.</div>
+    <div class="two"><div><label>Pompes</label>
+      <input type="number" id="cm-p" inputmode="numeric" value="${S.settings.cmPompes||20}"></div>
+      <div><label>Gainage (s)</label>
+      <input type="number" id="cm-g" inputmode="numeric" value="${S.settings.cmGainage||45}"></div></div>
+    <button class="btn ghost" id="cmsave" style="width:100%">Enregistrer</button></div>
 
   <div class="block"><h3>Pause générale</h3>
     <div class="empty">Le mode vacances : toutes les habits et tous les Bad Habits sont suspendus.
@@ -3019,6 +3243,11 @@ function renderSet(){
     <div class="mrow"><span>Version</span><span class="pct">SurH40 ${VERSION}</span></div>
     <div class="mrow"><span>Mode hors ligne</span><span class="pct">${('serviceWorker' in navigator)?'disponible':'non supporté'}</span></div></div>`;
   document.getElementById('set').innerHTML=h;
+  const cms=document.getElementById('cmsave');
+  if(cms)cms.onclick=()=>{
+    S.settings.cmPompes=+document.getElementById('cm-p').value||20;
+    S.settings.cmGainage=+document.getElementById('cm-g').value||45;
+    save();toast('Enregistré');};
   const gon=document.getElementById('gon');if(gon)gon.onclick=gcalConnect;
   const goff=document.getElementById('goff');if(goff)goff.onclick=()=>{
     if(confirm('Déconnecter Google Agenda ? Les événements chargés seront retirés.'))gcalDeconnect();};
@@ -3373,8 +3602,57 @@ window.addEventListener('popstate',e=>{
 })();
 document.getElementById('camonte').onclick=calmOuvrir;
 document.getElementById('calmx').onclick=calmFermer;
-document.getElementById('calmfin').addEventListener('click',e=>{
-  const b=e.target.closest('button');if(b&&b.dataset.col)calmNoter(b.dataset.col);});
+document.getElementById('calm').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;const d=b.dataset;
+  if(d.cm){
+    cmStop();
+    if(d.cm==='chauffe')return cmChauffe();
+    if(d.cm==='creuse')return cmCreuseEntree();
+    if(d.cm==='tire')return cmTire();
+    if(d.cm==='tourne')return cmTourne(0);
+    if(d.cm==='annonce')return cmAnnonce();
+  }
+  if(d.cmcat)return cmCreuse(d.cmcat);
+  if(d.cmnext!==undefined)return cmTourne(+d.cmnext);
+  if(d.cmnote)return cmNoteChamp();
+  if(d.cmnoteok){
+    const v=document.getElementById('cmnotein');
+    cm.note=v?v.value.trim().slice(0,60):null;
+    cmLog('passe');return cmFinal('Noté.');
+  }
+  if(d.cmplaf!==undefined){
+    S.plafonds=S.plafonds||{};
+    const j=jourLog();
+    S.plafonds[j]={max:+d.cmplaf,n:(S.plafonds[j]&&S.plafonds[j].n)||0};
+    save();document.getElementById('calm').classList.remove('on');cm={};render();
+    return;
+  }
+  if(d.cmverre){
+    S.plafonds=S.plafonds||{};const j=jourLog();
+    S.plafonds[j]=S.plafonds[j]||{max:null,n:0};
+    S.plafonds[j].n=(S.plafonds[j].n||0)+1;save();return cmAnnonce();
+  }
+  if(d.cmo){
+    cmStop();
+    const o=d.cmo;
+    /* relances : on rejoue le protocole sans clore l'épisode */
+    if(o==='encore'){
+      cm.relances=(cm.relances||0)+1;
+      if(cm.type==='tire')return cmTire(true);
+      if(cm.type==='tourne')return cmTourne(0,true);
+    }
+    if(o==='reporte'){
+      cm.relances=(cm.relances||0)+1;
+      return cmReporte();
+    }
+    cmLog(o);
+    if(o==='craque'&&cm.type==='chauffe')return cmFinal('Noté. Rien d\'autre à faire maintenant.');
+    if(o==='consomme')return cmFinal('Alors assis, dans une assiette, sans écran.');
+    document.getElementById('calm').classList.remove('on');cm={};render();
+  }
+  if(d.cmplus){cm.relances=(cm.relances||0)+1;return cmChauffePlus();}
+  if(d.cmeloigne)return cmEloigne();
+});
 document.getElementById('prev').onclick=()=>{cursor.setDate(cursor.getDate()-1);render();};
 document.getElementById('next').onclick=()=>{cursor.setDate(cursor.getDate()+1);render();};
 document.getElementById('mprev').onclick=()=>{monthCursor.setMonth(monthCursor.getMonth()-1);renderMonth();};
@@ -3391,7 +3669,7 @@ document.getElementById('send-month').onclick=()=>{SEND=true;reportMonth(cursor)
       saved.evts.push({id:Math.random().toString(36).slice(2,9),title:e.title,start:null,end:null,
         note:'',recurrent:false,days:null,date:k,from:null})));}
   if(saved)S=Object.assign(JSON.parse(JSON.stringify(BLANK)),saved,
-    {settings:Object.assign({window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
+    {settings:Object.assign({window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,cmPompes:20,cmGainage:45,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
   reindexAll();
   render();planRappels();
   try{history.replaceState({v:'home'},'');}catch(e){}

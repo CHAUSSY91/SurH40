@@ -128,7 +128,12 @@ Une journée sans aucune saisie ne compte pas.
   liste cachée, qui surgit sans qu'on la choisisse
 
 Un point ne s'applique pas tout seul : tu choisis la ligne dans le catalogue,
-et tu peux revenir sur ton choix. Les punitions sont **toujours des actions**
+et tu peux revenir sur ton choix.
+**Les punitions s'empilent**, jusqu'à 3 en attente. *Pourquoi* : si le compteur
+se figeait pendant qu'une dette traîne, la période deviendrait une fenêtre de
+gratuité — « c'est déjà foutu pour cette semaine ». Ici chaque écart continue de
+coûter. Au-delà de 3, on arrête d'empiler, mais rien n'est perdu : dès qu'une
+punition est réglée, la suivante prend sa place. Les punitions sont **toujours des actions**
 qui font progresser, jamais des privations.
 
 ### Pas de blocage
@@ -161,16 +166,40 @@ Sur l'accueil, entre les rappels et la ligne Matin : le total du jour et un
 bouton + . La ligne reste discrète tant que rien n'est dépensé.
 
 ### Le bouton « Ça monte »
-Gros bouton rouge fixe en bas de l'accueil. Un appui ouvre un écran noir : un
-cercle qui se dilate au rythme du souffle, 5 s inspire / 5 s expire, pendant
-60 secondes. Puis trois choix : c'est passé / je reporte / j'ai craqué.
-*Pourquoi cette forme* : en colère, on ne peut ni lire ni écrire — la fonction
-qui sert à ça vient précisément de lâcher. Donc un bouton, un cercle, trois choix.
-Chaque appui est horodaté. **Outils → Historique des colères** montre la
-répartition par créneau de 2 h et par jour de semaine, et désigne le créneau
-dominant. L'information ne s'obtient pas autrement : en colère, on ne prend pas
-de notes. Une fois connue, ce n'est pas la colère qu'on répare, c'est le créneau
-qu'on réorganise.
+Gros bouton rouge fixe en bas de l'accueil. Il ouvre un **routeur vers quatre
+protocoles**, chacun avec sa mécanique :
+
+| | Ça chauffe | Ça creuse | Ça tire | Ça tourne |
+|---|---|---|---|---|
+| pour | colère, tension | manger, boire | pulsion, scroll | ruminations |
+| entrée | — | Fatigue/Tension/Ennui/FDJ | — | — |
+| protocole | souffle 4/6 | eau + sortir | effort + compteur | ancrage 5-4-3 |
+| durée | 60 s (6 cycles) | 4 min | 3 min | déroulé libre |
+| timer visible | oui | oui | oui | non |
+| relance | +60 s | non | oui | oui |
+| champ texte | non | non | non | optionnel |
+
+**Règles non négociables** du module :
+1. **Aucune pénalité.** Rien de ce module n'entre dans les écarts, les séries,
+   les punitions ou le score. C'est un outil d'observation, pas un item noté.
+2. Aucun mot de jugement dans l'interface, sauf « J'ai craqué » explicitement
+   conservé à la demande de Mrik sur l'écran de sortie de *Ça chauffe*.
+3. Aucun message négatif quand un compteur retombe à zéro.
+4. Sortie possible à tout moment, loggée `abandon`, sans confirmation.
+5. **Discrétion totale** : écran sombre, aucun son, aucune vibration, aucune
+   notification. Utilisable en public.
+
+*Ça tire* affiche un compteur de jours depuis la dernière activation. Le nombre
+de pompes et la durée de gainage se règlent dans Réglages → Ça monte.
+
+**J'annonce** (cinquième entrée du routeur) : plafond de verres décidé à froid,
+0 à 3, rappelé factuellement dans *Ça creuse*. Aucun blocage si dépassé. Un
+bouton +1 verre incrémente le compteur.
+
+**Récap** dans Outils → *Ça monte · récap* : déclenchements par type sur 7 jours,
+taux de passage, répartition par créneau de 2 h — la vue la plus importante —,
+causes de *Ça creuse*, jours propres, pensées notées. Aucune interprétation
+automatique, aucun message de coaching. Les chiffres, rien d'autre.
 
 ### Suivi de poids
 Points bruts en gris + **tendance sur 7 relevés** en vert. C'est la ligne verte
@@ -216,5 +245,5 @@ est supprimé par Google.
 ## 8. Méthode de travail
 
 Chaque version est validée par une suite de tests automatisés qui simule un vrai
-parcours dans l'appli — 454 vérifications à ce jour. Toute demande est **cadrée
+parcours dans l'appli — 531 vérifications à ce jour. Toute demande est **cadrée
 avant d'être codée** : on discute, tu valides, je code.
