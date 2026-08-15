@@ -363,7 +363,13 @@ span.chip{cursor:default}
 .depline .dl em{display:block;font-style:normal;font-size:11px;color:var(--dim);
   font-family:'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
 .depline .dv{font-family:'Barlow Condensed',sans-serif;font-size:14px;color:var(--or)}
-.depjour{display:flex;align-items:center;gap:12px;padding:13px 16px;margin-bottom:20px}
+.depjour{display:flex;align-items:center;gap:12px;padding:13px 16px}
+.depjour .dj{background:none;border:0;padding:0;text-align:left;cursor:pointer;font:inherit;
+  font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;letter-spacing:.2em;
+  font-size:11px;color:var(--dim)}
+.depjour .dj .c{color:var(--or);font-style:normal;display:inline-block;transition:transform .2s}
+.depjour .dj.o .c{transform:rotate(90deg)}
+.depdet{padding:0 16px 14px;animation:fade .25s ease}
 .depjour .t{flex:1;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
   letter-spacing:.2em;font-size:11px;color:var(--dim)}
 .depjour .v{font-family:'Cinzel',serif;font-size:18px;color:var(--or)}
@@ -435,7 +441,7 @@ span.chip{cursor:default}
 .ecprop{margin:10px 0 0;font-size:13px;font-weight:300;color:var(--dim)}
 .ecprop b{color:var(--or);font-weight:600}
 .note{padding:15px 16px;margin-bottom:9px}
-.note p{margin:0;font-size:15.5px;font-weight:300;white-space:pre-wrap}
+.note p{margin:0;font-size:15.5px;font-weight:300;white-space:pre-wrap;overflow-wrap:anywhere}
 .notemeta{font-family:'Barlow Condensed',sans-serif;font-size:10.5px;letter-spacing:.16em;
   text-transform:uppercase;color:var(--bronze);margin-top:8px}
 .note .acts{margin-top:10px}
@@ -472,6 +478,7 @@ span.chip{cursor:default}
 .bech span{font-family:'Barlow Condensed',sans-serif;font-size:10px;color:var(--dim);letter-spacing:.1em}
 .bexp{margin-top:11px;padding:12px 14px;border:1px solid var(--trait);border-left-width:3px;
   border-radius:var(--r);background:rgba(0,0,0,.2);font-size:14px;font-weight:300;color:var(--dim)}
+.bexp{white-space:pre-wrap}
 .bexp b{display:block;font-family:'Barlow Condensed',sans-serif;text-transform:uppercase;
   letter-spacing:.16em;font-size:11.5px;margin-bottom:5px}
 .palgrid{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:12px}
@@ -494,7 +501,7 @@ span.chip{cursor:default}
 .acc{margin-bottom:9px;overflow:hidden}
 .acchead{width:100%;background:none;border:0;color:var(--marbre);font:inherit;text-align:left;
   padding:16px 17px;display:flex;align-items:center;gap:12px;cursor:pointer}
-.acchead .t{flex:1;font-family:'Cinzel',serif;font-size:15px;letter-spacing:.08em}
+.acchead .t{flex:1;font-family:'Cinzel',serif;font-size:15px;letter-spacing:.08em;white-space:pre-wrap}
 .acchead .c{color:var(--or);font-size:15px;transition:transform .2s;flex:none}
 .acc.open .acchead .c{transform:rotate(90deg)}
 .accbody{padding:0 17px 18px;display:none}
@@ -503,12 +510,12 @@ span.chip{cursor:default}
   background:rgba(201,162,39,.06);border-radius:0 var(--r) var(--r) 0;font-size:14px;
   font-weight:300;color:var(--dim)}
 .sugg b{color:var(--or);font-weight:600}
-.rule{color:var(--dim);font-size:14.5px;font-weight:300;font-style:italic;
+.rule{color:var(--dim);font-size:14.5px;font-weight:300;font-style:italic;white-space:pre-wrap;
   border-left:2px solid var(--or);padding:2px 0 2px 13px;margin:0 0 16px}
 .entry{background:rgba(0,0,0,.22);border:1px solid var(--trait);border-radius:var(--r);
   padding:13px 14px;margin-bottom:8px;position:relative}
-.entry h5{margin:0 0 5px;font-size:15.5px;font-weight:600}
-.entry p{margin:0 0 4px;font-size:14.5px;font-weight:300;color:var(--dim);white-space:pre-wrap}
+.entry h5{margin:0 0 5px;font-size:15.5px;font-weight:600;white-space:pre-wrap}
+.entry p{margin:0 0 4px;font-size:14.5px;font-weight:300;color:var(--dim);white-space:pre-wrap;overflow-wrap:anywhere}
 .entry .dt{font-family:'Barlow Condensed',sans-serif;font-size:10px;letter-spacing:.16em;
   text-transform:uppercase;color:var(--bronze);margin-top:7px}
 .entry .acts{margin-top:11px}
@@ -952,10 +959,15 @@ function lances(mom,date){
   return out;
 }
 /* seul ce qui est tranché (vert ou rouge) compte dans le score */
-function dayScore(date){let tot=0,ok=0;
+/* Journée passée : une case grise est déjà rouge, seul ce qui est tranché compte.
+   Journée en cours : tout ce qui est prévu compte, pour partir de 0 % et progresser. */
+function dayScore(date){
+  const enCours=(date===today());
+  let tot=0,ok=0;
   ['matin','midi','soir'].forEach(m=>lances(m,date).forEach(l=>{
-    if(l==='n')return;tot++;if(l==='v')ok++;}));
-  return {tot,ok,pct:tot?Math.round(ok/tot*100):null};}
+    if(l==='n'&&!enCours)return;
+    tot++;if(l==='v')ok++;}));
+  return {tot,ok,pct:tot?Math.round(ok/tot*100):null,enCours};}
 
 /* écarts = cheats notés + bad habits non cochées */
 /* une journée est "vécue" si tu as saisi quelque chose : sinon rien ne t'est reproché */
@@ -1103,9 +1115,18 @@ function renderHome(){
 
   const dj=depJour(date),tj=depTotal(dj);
   document.getElementById('depjour').innerHTML=
-    `<div class="depjour pan"><span class="t">Dépenses du jour</span>
-      ${tj?`<span class="v">${eur(tj)}</span>`:'<span class="t" style="letter-spacing:.1em;text-transform:none;font-style:italic">rien de noté</span>'}
-      <button class="plus" data-adddep="1" aria-label="Ajouter une dépense">+</button></div>`;
+    `<div class="pan" style="margin-bottom:20px">
+      <div class="depjour">
+        <button class="t dj${depOpen?' o':''}" data-depopen="1" ${tj?'':'style="cursor:default"'}>Dépenses du jour${tj?' <i class="c">›</i>':''}</button>
+        ${tj?`<span class="v">${eur(tj)}</span>`:'<span class="t" style="letter-spacing:.1em;text-transform:none;font-style:italic">rien de noté</span>'}
+        <button class="plus" data-adddep="1" aria-label="Ajouter une dépense">+</button></div>
+      ${(tj&&depOpen)?`<div class="depdet">${dj.slice().reverse().map(x=>{
+        const c=depCat(x.cat);
+        return `<div class="depline"><i style="background:rgb(${c.c})"></i>
+          <span class="dl">${esc(x.label)}<em>${esc(c.name)}</em></span>
+          <span class="dv">${eur(x.eur)}</span></div>`;}).join('')}
+        <p class="empty" style="margin:10px 0 0">Modification et suppression dans Outils → Dépenses.</p></div>`:''}
+    </div>`;
 
   const rows=['matin','midi','soir'].map(m=>{
     const L=lances(m,date);
@@ -1575,7 +1596,7 @@ function renderGoals(){
   h+=`<div class="block"><h3>${MON[new Date().getMonth()]} au jour le jour</h3>
     <div class="palgrid">${monthDays().map(d=>{
       const sc=dayScore(d);
-      if(d>today()||horsComptage(d))return `<i class="pcell"></i>`;
+      if(d>=today()||horsComptage(d))return `<i class="pcell"></i>`;
       if(inGPause(d))return `<i class="pcell pz" title="${d}"></i>`;
       if(sc.pct===null)return `<i class="pcell" title="${d}"></i>`;
       const pa=palier(sc.pct);
@@ -2149,6 +2170,7 @@ h2:after{content:"";flex:1;height:1px;background:rgba(237,233,220,.12)}
   border-bottom:1px solid rgba(237,233,220,.08);font-weight:300}
 .row:last-child{border:0}
 .row b{font-weight:600}
+.pre{white-space:pre-wrap}
 .bar{height:6px;background:rgba(0,0,0,.4);border-radius:3px;margin-top:8px;overflow:hidden}
 .bar i{display:block;height:100%;border-radius:3px;background:#7BA65C}
 .bar i.mid{background:#C9A227}.bar i.low{background:#A93B27}
@@ -2264,8 +2286,8 @@ function reportDay(date){
   }
   if(j.good||j.bad){
     h+=`<h2>Bilan</h2><div class="pan">
-      ${j.good?`<div class="row"><span class="ok">Ce qui a marché</span></div><div style="font-weight:300">${esc(j.good)}</div>`:''}
-      ${j.bad?`<div class="row" style="margin-top:12px"><span class="no">Ce qui a lâché</span></div><div style="font-weight:300">${esc(j.bad)}</div>`:''}</div>`;
+      ${j.good?`<div class="row"><span class="ok">Ce qui a marché</span></div><div style="font-weight:300" class="pre">${esc(j.good)}</div>`:''}
+      ${j.bad?`<div class="row" style="margin-top:12px"><span class="no">Ce qui a lâché</span></div><div style="font-weight:300" class="pre">${esc(j.bad)}</div>`:''}</div>`;
   }
   h+=`<h2>Axes d'amélioration</h2>`+advices(days,perf).map(a=>`<div class="adv"><b>${a[0]}</b>${esc(a[1])}</div>`).join('');
   const q=QUOTES[(d.getDate()+d.getMonth()*3)%QUOTES.length];
@@ -2341,8 +2363,8 @@ function reportMonth(dd){
       const j=S.journal[k];
       return `<div style="padding:11px 0;border-bottom:1px solid rgba(237,233,220,.08)">
         <div class="mut" style="font-size:11px;letter-spacing:.16em">${k}</div>
-        ${j.good?`<div class="ok" style="font-weight:300">+ ${esc(j.good)}</div>`:''}
-        ${j.bad?`<div class="no" style="font-weight:300">− ${esc(j.bad)}</div>`:''}</div>`;}).join('')+`</div>`;
+        ${j.good?`<div class="ok pre" style="font-weight:300">+ ${esc(j.good)}</div>`:''}
+        ${j.bad?`<div class="no pre" style="font-weight:300">− ${esc(j.bad)}</div>`:''}</div>`;}).join('')+`</div>`;
   }
   h+=`<h2>Axes d'amélioration</h2>`+advices(days,perf).map(a=>`<div class="adv"><b>${a[0]}</b>${esc(a[1])}</div>`).join('');
   const q=QUOTES[(m*5)%QUOTES.length];
@@ -2364,6 +2386,7 @@ const CATS_DEFAUT=[
  {n:'Enfants',c:'142,153,214'},{n:'Santé',c:'186,190,196'},
  {n:'Maison',c:'107,122,79'},{n:'CHEAT',c:'169,59,39'},{n:'Imprévu',c:'140,120,100'}];
 let depVue='mois';
+let depOpen=false;
 function depData(){
   S.depenses=S.depenses||{cats:[],items:[]};
   if(!S.depenses.cats.length)S.depenses.cats=CATS_DEFAUT.map(x=>({id:uid(),name:x.n,c:x.c}));
@@ -2441,7 +2464,7 @@ function blocDepenses(){
         ${ed?`<button class="del" data-eddep="${x.id}" style="padding:0 5px;font-size:12px">modif</button>
              <button class="del" data-deldep="${x.id}" style="padding:0 4px;font-size:16px">×</button>`:''}</div>`;});
   }
-  h+=`<div class="acc pan ${openTool==='depcat'?'open':''}" style="margin-top:12px">
+  h+=`<div class="acc pan ${openPool.has('depcat')?'open':''}" style="margin-top:12px">
     <button class="acchead" data-tool="depcat"><span class="t">Familles de dépenses</span>
       <span class="meta">${D.cats.length}</span><span class="c">›</span></button>
     <div class="accbody">`;
@@ -2644,6 +2667,14 @@ async function gcalSync(silencieux){
     save();
   }catch(err){toast('Synchronisation impossible');}
   gcalBusy=false;render();
+}
+/* une synchro le matin, une le soir : le mode Test de Google redemande le
+   consentement à chaque jeton, autant les espacer */
+function gcalDue(){
+  if(!S.gcal||!S.gcal.synced)return true;
+  const d=new Date(S.gcal.synced),n=new Date();
+  if(iso(d)!==iso(n))return true;
+  return d.getHours()<13&&n.getHours()>=13;
 }
 function gcalFor(date){
   if(!gcalActif()||S.settings.gcalMasque)return [];
@@ -2876,7 +2907,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='4.8';
+const VERSION='4.9';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -2913,7 +2944,7 @@ function renderSet(){
 
   <div class="block"><h3>Google Agenda</h3>
     <div class="empty">Tes rendez-vous Google apparaissent dans les trois vues du Calendrier, en bleu, marqués d'un G.
-      SurH40 les lit sans jamais les modifier.</div>
+      SurH40 les lit sans jamais les modifier. Synchronisation deux fois par jour, matin et après-midi.</div>
     ${gcalActif()?`
       <div class="switch pan"><span>Masquer les événements Google</span>
         <div class="toggle ${S.settings.gcalMasque?'on':''}" id="gmask"><i></i></div></div>
@@ -3209,11 +3240,16 @@ document.addEventListener('click',e=>{
   if(d.open){cursor=new Date(d.open);cursor.setHours(12,0,0,0);return go('home');}
   if(d.fam){if(openFam.has(d.fam))openFam.delete(d.fam);else openFam.add(d.fam);renderStat();return;}
   if(d.stat){detailId=d.stat;heatOff=0;return go('detail');}
-  if(d.tool){openTool=(openTool===d.tool)?null:d.tool;return renderTools();}
+  if(d.tool){
+    /* les sous-volets vivent leur vie sans refermer leur parent */
+    if(d.tool==='depcat'){if(openPool.has('depcat'))openPool.delete('depcat');else openPool.add('depcat');
+      return renderTools();}
+    openTool=(openTool===d.tool)?null:d.tool;return renderTools();}
   if(d.newtool)return formNewTool();
   if(d.deltool){if(confirm('Supprimer cet outil et toutes ses entrées ?')){
     S.customTools=S.customTools.filter(c=>c.k!==d.deltool);delete S.tools[d.deltool];
     if(openTool===d.deltool)openTool=null;save();renderTools();}return;}
+  if(d.depopen){depOpen=!depOpen;return renderHome();}
   if(d.adddep)return formDep();
   if(d.eddep)return formDep(d.eddep);
   if(d.deldep){if(confirm('Supprimer cette dépense ?')){
@@ -3350,7 +3386,7 @@ document.getElementById('send-month').onclick=()=>{SEND=true;reportMonth(cursor)
   if('serviceWorker' in navigator&&location.protocol!=='file:')
     navigator.serviceWorker.register('sw.js').catch(()=>{});
   document.addEventListener('visibilitychange',()=>{if(!document.hidden){render();planRappels();
-    if(gcalActif()&&(!S.gcal.synced||Date.now()-new Date(S.gcal.synced)>1800000))gcalSync(true);}});
+    if(gcalActif()&&gcalDue())gcalSync(true);}});
 })();
 </script>
 </body>

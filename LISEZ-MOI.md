@@ -83,8 +83,17 @@ tranches compte.
 
 ### Un jour passé non tranché vaut rouge
 Dès que la journée est écoulée, une case restée grise devient rouge partout.
-*Pourquoi* : sinon on améliore son score en ne décidant pas. Seul le jour en
-cours reste gris.
+*Pourquoi* : sinon on améliore son score en ne décidant pas.
+
+### Le score du jour part de 0 %
+Sur la journée en cours, **tout ce qui est prévu compte au dénominateur**, y
+compris les cases encore grises. On démarre donc à 0 % le matin et on progresse.
+*Pourquoi* : auparavant seul le tranché comptait, ce qui donnait 100 % dès la
+première case cochée — un chiffre qui ne voulait rien dire. Le palier affiché
+suit, Décrochage compris : c'est assumé, il ne se lit que le soir en ouvrant
+Objectifs, jamais au réveil. Les journées closes, les stats, la série et
+l'historique ne changent pas. Le jour en cours n'est jamais colorié dans les
+grilles mensuelles.
 
 ### Bad Habit : on coche quand on n'a PAS cédé
 Contre-intuitif mais assumé. Une seule lance pour tout le bloc, verte seulement
@@ -207,5 +216,5 @@ est supprimé par Google.
 ## 8. Méthode de travail
 
 Chaque version est validée par une suite de tests automatisés qui simule un vrai
-parcours dans l'appli — 401 vérifications à ce jour. Toute demande est **cadrée
+parcours dans l'appli — 435 vérifications à ce jour. Toute demande est **cadrée
 avant d'être codée** : on discute, tu valides, je code.
