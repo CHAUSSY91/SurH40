@@ -201,7 +201,11 @@ h2.title{font-family:'Cinzel',serif;font-size:27px;letter-spacing:.11em;margin:0
   font-size:13.5px;color:var(--or);display:flex;flex-wrap:wrap;gap:9px;align-items:center}
 .pz button{background:none;border:1px solid rgba(201,162,39,.4);border-radius:var(--r);
   color:var(--or);font:inherit;font-size:12.5px;padding:4px 10px;cursor:pointer}
-.detail .del{background:none;border:0;color:var(--rouge);font-size:13px;padding:9px 0 0;cursor:pointer}
+.del{background:none;border:0;color:var(--dim);font:inherit;font-size:13px;cursor:pointer;
+  font-family:'Barlow Condensed',sans-serif;letter-spacing:.1em;text-transform:uppercase;flex:none}
+.del:hover{color:var(--or)}
+.detail .del{background:none;border:0;color:var(--rouge);font-size:13px;padding:9px 0 0;cursor:pointer;
+  font-family:'Barlow',sans-serif;letter-spacing:0;text-transform:none}
 .empty{color:var(--dim);font-size:14.5px;font-style:italic;padding:2px 0 12px;font-weight:300}
 .add{
   width:100%;background:rgba(255,255,255,.02);border:1px dashed var(--trait);border-radius:var(--r);
@@ -504,9 +508,9 @@ span.chip{cursor:default}
   padding:16px 17px;display:flex;align-items:center;gap:12px;cursor:pointer}
 .acchead .t{flex:1;font-family:'Cinzel',serif;font-size:15px;letter-spacing:.08em;white-space:pre-wrap}
 .acchead .c{color:var(--or);font-size:15px;transition:transform .2s;flex:none}
-.acc.open .acchead .c{transform:rotate(90deg)}
+.acc.open > .acchead .c{transform:rotate(90deg)}
 .accbody{padding:0 17px 18px;display:none}
-.acc.open .accbody{display:block;animation:fade .25s ease}
+.acc.open > .accbody{display:block;animation:fade .25s ease}
 .sugg{margin:-4px 0 14px;padding:10px 13px;border-left:2px solid var(--or);
   background:rgba(201,162,39,.06);border-radius:0 var(--r) var(--r) 0;font-size:14px;
   font-weight:300;color:var(--dim)}
@@ -2490,26 +2494,36 @@ function blocDepenses(){
       soit ${Math.round(ch.part)} % de tes dépenses. Un écart ne coûte pas qu'une case rouge.</div>`;
   }
   h+=`<button class="add" data-adddep="1" style="margin-top:12px">+ Ajouter une dépense</button>`;
+
+  /* volet : le détail des lignes */
   if(l.length){
-    h+=`<div class="sub" style="margin:16px 0 7px">${depVue==='jour'?'Aujourd\'hui':'Ce mois'} · ${l.length} ligne${l.length>1?'s':''}</div>`;
-    l.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,ed?200:12).forEach(x=>{
+    const opL=openPool.has('deplig');
+    h+=`<div class="acc pan ${opL?'open':''}" style="margin-top:12px">
+      <button class="acchead" data-pool="deplig"><span class="t">${depVue==='jour'?"Les lignes du jour":'Les lignes du mois'}</span>
+        <span class="meta">${l.length}</span><span class="c">›</span></button>
+      <div class="accbody">`;
+    l.slice().sort((a,b)=>b.date.localeCompare(a.date)).slice(0,ed?400:40).forEach(x=>{
       const c=depCat(x.cat),d=new Date(x.date);
       h+=`<div class="depline"><i style="background:rgb(${c.c})"></i>
         <span class="dl">${esc(x.label)}<em>${DOW[d.getDay()]} ${d.getDate()} ${MSHORT[d.getMonth()]} · ${esc(c.name)}</em></span>
         <span class="dv">${eur(x.eur)}</span>
-        ${ed?`<button class="del" data-eddep="${x.id}" style="padding:0 5px;font-size:12px">modif</button>
-             <button class="del" data-deldep="${x.id}" style="padding:0 4px;font-size:16px">×</button>`:''}</div>`;});
+        ${ed?`<button class="del" data-eddep="${x.id}">modif</button>
+             <button class="del" data-deldep="${x.id}" style="font-size:16px">×</button>`:''}</div>`;});
+    h+=`<button class="edtog${ed?' on':''}" data-edtool="dep">${ed?'Terminer':'Modifier les entrées'}</button>
+      </div></div>`;
   }
-  h+=`<div class="acc pan ${openPool.has('depcat')?'open':''}" style="margin-top:12px">
-    <button class="acchead" data-tool="depcat"><span class="t">Familles de dépenses</span>
+
+  /* volet : les familles */
+  const opF=openPool.has('depcat');
+  h+=`<div class="acc pan ${opF?'open':''}" style="margin-top:9px">
+    <button class="acchead" data-pool="depcat"><span class="t">Familles de dépenses</span>
       <span class="meta">${D.cats.length}</span><span class="c">›</span></button>
     <div class="accbody">`;
   D.cats.forEach(c=>h+=`<div class="depline"><i style="background:rgb(${c.c})"></i>
     <span class="dl">${esc(c.name)}</span>
-    <button class="del" data-rendepcat="${c.id}" style="padding:0 6px;font-size:12px">renommer</button>
-    <button class="del" data-deldepcat="${c.id}" style="padding:0 4px;font-size:16px">×</button></div>`);
+    <button class="del" data-rendepcat="${c.id}">renommer</button>
+    <button class="del" data-deldepcat="${c.id}" style="font-size:16px">×</button></div>`);
   h+=`<button class="add" data-adddepcat="1">+ Créer une famille</button></div></div>`;
-  if(l.length)h+=`<button class="edtog${ed?' on':''}" data-edtool="dep">${ed?'Terminer':'Modifier les entrées'}</button>`;
   return h+`</div></div>`;
 }
 function formDep(id){
@@ -2795,37 +2809,52 @@ Aucun de ces chiffres n'entre dans tes scores, tes séries ou tes punitions.</p>
   const pire=cr.indexOf(mxh);
   if(l.length>=5)h+=`<div class="bexp" style="border-color:rgba(201,162,39,.4);margin-top:12px">
     <b style="color:var(--or)">Ton créneau</b>Le plus chargé est <b style="color:var(--marbre)">${pire*2}h – ${pire*2+2}h</b>.</div>`;
-  /* Ça creuse : par catégorie */
-  const cz=j7.filter(c=>c.type==='creuse'&&c.categorie);
-  if(cz.length){
-    h+=`<div class="sub" style="margin:18px 0 8px">Ça creuse · pourquoi</div><div class="deplist">`;
-    CM_CAT.forEach(c=>{const n=cz.filter(x=>x.categorie===c[0]).length;
-      if(n)h+=`<div class="depcat"><i style="background:var(--bronze)"></i>
-        <span class="dn">${c[1]}</span><span class="de">${n}</span></div>`;});
-    h+=`</div>`;
-  }
-  /* Ça tire : jours propres */
+  /* Ça tire : jours propres, en évidence */
   if(l.some(c=>c.type==='tire')||S.tireDepart)
     h+=`<div class="mrow" style="margin-top:14px"><span>Ça tire · jours</span>
       <span class="pct" style="color:var(--or)">${joursPropres()}</span></div>`;
-  /* notes */
-  const notes=l.filter(c=>c.note).slice(-6).reverse();
+
+  /* volet : causes de Ça creuse */
+  const cz=j7.filter(c=>c.type==='creuse'&&c.categorie);
+  if(cz.length){
+    const o1=openPool.has('cmcz');
+    h+=`<div class="acc pan ${o1?'open':''}" style="margin-top:14px">
+      <button class="acchead" data-pool="cmcz"><span class="t">Ça creuse · pourquoi</span>
+        <span class="meta">${cz.length}</span><span class="c">›</span></button>
+      <div class="accbody"><div class="deplist">`;
+    CM_CAT.forEach(c=>{const n=cz.filter(x=>x.categorie===c[0]).length;
+      if(n)h+=`<div class="depcat"><i style="background:var(--bronze)"></i>
+        <span class="dn">${c[1]}</span><span class="de">${n}</span></div>`;});
+    h+=`</div></div></div>`;
+  }
+  /* volet : pensées notées */
+  const notes=l.filter(c=>c.note).slice().reverse();
   if(notes.length){
-    h+=`<div class="sub" style="margin:18px 0 7px">Pensées notées</div>`;
-    notes.forEach(c=>{const d=new Date(c.ts);
+    const o2=openPool.has('cmnotes');
+    h+=`<div class="acc pan ${o2?'open':''}" style="margin-top:9px">
+      <button class="acchead" data-pool="cmnotes"><span class="t">Pensées notées</span>
+        <span class="meta">${notes.length}</span><span class="c">›</span></button>
+      <div class="accbody">`;
+    notes.slice(0,20).forEach(c=>{const d=new Date(c.ts);
       h+=`<div class="mrow"><span style="color:var(--dim)">${esc(c.note)}</span>
         <span class="pct">${d.getDate()}/${d.getMonth()+1}</span></div>`;});
+    h+=`</div></div>`;
   }
-  /* derniers épisodes */
-  h+=`<div class="sub" style="margin:18px 0 7px">Derniers épisodes</div>`;
+  /* volet : derniers épisodes */
+  const o3=openPool.has('cmep');
   const LIB={passe:'passé',retombe:'retombé',encore:'encore',consomme:'consommé',
     arrive:'arrivé',sorti:'sorti',eloigne:'éloigné',reporte:'reporté',craque:'craqué',abandon:'sorti avant'};
-  l.slice().reverse().slice(0,12).forEach(c=>{
+  h+=`<div class="acc pan ${o3?'open':''}" style="margin-top:9px">
+    <button class="acchead" data-pool="cmep"><span class="t">Derniers épisodes</span>
+      <span class="meta">${l.length}</span><span class="c">›</span></button>
+    <div class="accbody">`;
+  l.slice().reverse().slice(0,30).forEach(c=>{
     const d=new Date(c.ts);
     h+=`<div class="mrow"><span>${cmNom(c.type)}
         <em style="font-style:normal;color:var(--dim)"> · ${DOW[d.getDay()]} ${d.getDate()} ${MSHORT[d.getMonth()]} ${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')}</em></span>
       <span class="pct">${LIB[c.sortie]||c.sortie||'—'}
-      <button class="del" data-delcol="${c.id}" style="padding:0 6px;font-size:15px">×</button></span></div>`;});
+      <button class="del" data-delcol="${c.id}" style="font-size:15px">×</button></span></div>`;});
+  h+=`</div></div>`;
   return h+`</div></div>`;
 }
 
@@ -3135,7 +3164,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='5.0';
+const VERSION='5.1';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -3483,8 +3512,6 @@ document.addEventListener('click',e=>{
   if(d.stat){detailId=d.stat;heatOff=0;return go('detail');}
   if(d.tool){
     /* les sous-volets vivent leur vie sans refermer leur parent */
-    if(d.tool==='depcat'){if(openPool.has('depcat'))openPool.delete('depcat');else openPool.add('depcat');
-      return renderTools();}
     openTool=(openTool===d.tool)?null:d.tool;return renderTools();}
   if(d.newtool)return formNewTool();
   if(d.deltool){if(confirm('Supprimer cet outil et toutes ses entrées ?')){
@@ -3530,7 +3557,9 @@ document.addEventListener('click',e=>{
   if(d.wipe){if(confirm('Effacer définitivement toutes tes données ?')&&confirm('Vraiment ? Cette action est irréversible.')){
     S=JSON.parse(JSON.stringify(BLANK));save();render();toast('Tout a été effacé');}return;}
   if(d.bar){palOpen=(palOpen===d.bar)?null:d.bar;return renderGoals();}
-  if(d.pool){if(openPool.has(d.pool))openPool.delete(d.pool);else openPool.add(d.pool);return renderGoals();}
+  if(d.pool){
+    if(openPool.has(d.pool))openPool.delete(d.pool);else openPool.add(d.pool);
+    return ['depcat','deplig','cmcz','cmnotes','cmep'].includes(d.pool)?renderTools():renderGoals();}
   if(d.pick){const[k,id]=d.pick.split('|');
     const pool=k==='rec'?S.recPool:S.punPool;
     const x=pool.find(y=>y.id===id);if(!x)return;

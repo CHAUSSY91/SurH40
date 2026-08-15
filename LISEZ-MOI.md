@@ -245,5 +245,5 @@ est supprimé par Google.
 ## 8. Méthode de travail
 
 Chaque version est validée par une suite de tests automatisés qui simule un vrai
-parcours dans l'appli — 531 vérifications à ce jour. Toute demande est **cadrée
+parcours dans l'appli — 561 vérifications à ce jour. Toute demande est **cadrée
 avant d'être codée** : on discute, tu valides, je code.
