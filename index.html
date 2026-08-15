@@ -917,6 +917,7 @@ function bestStreak(){
   const S0=seuilJ();let best=0,cur=0;
   let d=firstDay();
   while(d<=today()){
+    if(d===today()){d=shift(new Date(d),1);continue;}
     const sc=dayScore(d);
     if(sc.tot&&sc.pct>=S0){cur++;best=Math.max(best,cur);}
     else if(sc.tot)cur=0;
@@ -1031,8 +1032,10 @@ function checkDebt(){
 function seuilJ(){return SEUIL;}
 function streakDays(){
   const S0=seuilJ();let s=0;
-  for(let k=0;k<400;k++){const d=shift(new Date(),-k);const sc=dayScore(d);
-    if(k===0&&(!sc.tot||sc.pct<S0)){if(!sc.tot)continue;else break;}
+  for(let k=0;k<400;k++){
+    const d=shift(new Date(),-k),sc=dayScore(d);
+    /* le jour en cours n'est jamais un échec : il n'est pas fini */
+    if(k===0){if(sc.tot&&sc.pct>=S0)s++;continue;}
     if(sc.tot&&sc.pct>=S0)s++;else break;}
   return s;}
 
@@ -1441,8 +1444,8 @@ function strip(i,days){
     const st=i.type==='bad'?(isDone(i.id,d)?1:2):state(i.id,d);
     return `<i class="sq ${st===1?'v':st===2?'r':'g'}"></i>`;}).join('')+`</div>`;
 }
-function monthDays(){
-  const d=new Date(),y=d.getFullYear(),m=d.getMonth(),last=new Date(y,m+1,0).getDate();
+function monthDays(ref){
+  const d=ref?new Date(ref):new Date(),y=d.getFullYear(),m=d.getMonth(),last=new Date(y,m+1,0).getDate();
   const l=[];for(let k=1;k<=last;k++)l.push(iso(new Date(y,m,k)));
   return l;
 }
@@ -1567,14 +1570,15 @@ function gobjYear(){const y=String(new Date().getFullYear());
 const NIVX={nano:{t:'Nano',d:'la semaine'},micro:{t:'Micro',d:'le mois ou le trimestre'},macro:{t:'Macro',d:"l'année"}};
 function renderGoals(){
   seedPools();
-  const st=streakDays(),ec=ecartsWindow();
-  const pj=dayScore(today()).pct, pal=palier(pj);
+  const st=streakDays(),ec=ecartsWindow(),deb=openDebt();
+  const dj=iso(cursor),hier=(dj!==today());
+  const pj=dayScore(dj).pct, pal=palier(pj);
   const cr=S.credits||{rec:0,pun:0};
 
   /* deux anneaux */
   let h=`<div class="duo">
     <div class="pan duocard"><div class="donut">${donut(pj??0,104,pal?`rgb(${pal.c})`:null)}
-      <div class="lbl"><b style="${pal?`color:rgb(${pal.c})`:''}">${pj===null?'—':pj+'%'}</b><span>aujourd'hui</span></div></div>
+      <div class="lbl"><b style="${pal?`color:rgb(${pal.c})`:''}">${pj===null?'—':pj+'%'}</b><span>${hier?DOW[new Date(dj).getDay()]+' '+new Date(dj).getDate():"aujourd'hui"}</span></div></div>
       <div class="duolbl" style="${pal?`color:rgb(${pal.c})`:''}">${pj===null?'rien de tranché':pal.n}</div></div>
     <div class="pan duocard"><div class="donut">${donut(Math.min(100,st/SERIE_REC*100),104,'#C9A227')}
       <div class="lbl"><b>${st}</b><span>jours</span></div></div>
@@ -1593,8 +1597,8 @@ function renderGoals(){
       :`<div class="empty" style="margin-top:10px">Touche un palier pour son explication. Novice, Régulier et Boss comptent tous dans la série.</div>`}</div>`;
 
   /* mois au jour le jour */
-  h+=`<div class="block"><h3>${MON[new Date().getMonth()]} au jour le jour</h3>
-    <div class="palgrid">${monthDays().map(d=>{
+  h+=`<div class="block"><h3>${MON[cursor.getMonth()]} au jour le jour</h3>
+    <div class="palgrid">${monthDays(cursor).map(d=>{
       const sc=dayScore(d);
       if(d>=today()||horsComptage(d))return `<i class="pcell"></i>`;
       if(inGPause(d))return `<i class="pcell pz" title="${d}"></i>`;
@@ -1621,18 +1625,26 @@ function renderGoals(){
   h+=blocPoints('rec',cr.rec,S.recPool);
 
   /* écarts, juste avant les punitions */
-  const rest=Math.max(0,S.settings.seuil-ec);
+  const punEnAttente=cr.pun>0;
+  /* tant que la punition n'est pas choisie et réglée, la jauge reste pleine */
+  const net=(punEnAttente||(S.awards||[]).some(a=>a.kind==='pun'&&!a.done))
+    ?S.settings.seuil:Math.max(0,ec-(S.baseline||0));
+  const rest=Math.max(0,S.settings.seuil-net);
+  const punEnCours=(S.awards||[]).find(a=>a.kind==='pun'&&!a.done);
   h+=`<div class="block"><h3>Les écarts</h3>
     <div class="ecart pan">
-      <div class="statline"><span class="n">${ec} / ${S.settings.seuil}</span>
+      <div class="statline"><span class="n">${net} / ${S.settings.seuil}</span>
         <span class="pct">sur ${S.settings.window} jours glissants</span></div>
-      <div class="bar" style="height:9px"><i class="${ec>=S.settings.seuil?'low':ec>=S.settings.seuil-1?'mid':''}" style="width:${Math.min(100,ec/S.settings.seuil*100)}%"></i></div>
+      <div class="bar" style="height:9px"><i class="${net>=S.settings.seuil?'low':net>=S.settings.seuil-1?'mid':''}" style="width:${Math.min(100,net/S.settings.seuil*100)}%"></i></div>
       <p class="ecexp">Une <b>journée</b> compte pour un écart si tu y as noté un CHEAT ou laissé un Bad Habit non tenu.
         Peu importe le nombre de lignes : c'est le jour qui compte. Une journée où tu n'as rien saisi ne compte pas.</p>
-      <p class="ecpique">${ec>=S.settings.seuil?"Le compte y est. Une punition t'attend."
+      <p class="ecpique">${punEnCours?`Une punition est en cours : ${esc(punEnCours.label)}.`
+        :cr.pun>0?"Le compte y est. Choisis ta punition ci-dessous."
+        :rest===0?"Le compte y est. La punition arrive."
         :rest===1?PIQUES[new Date().getDate()%PIQUES.length]
         :`Encore ${rest} journées d'écart avant la note.`}</p>
-      <p class="ecprop">Série propre : <b>${sp} jour${sp>1?'s':''}</b> sans écart · récompense d'exception à ${SERIE_PROPRE}.</p></div></div>`;
+      <p class="ecprop">Série propre : <b>${sp} jour${sp>1?'s':''}</b> sans écart · récompense d'exception à ${SERIE_PROPRE}.
+        ${(S.baseline||0)>0?`<br>${ec} écarts au total sur ${S.settings.window} jours, dont ${S.baseline} déjà sanctionnés.`:''}</p></div></div>`;
 
   /* punitions */
   h+=blocPoints('pun',cr.pun,S.punPool);
@@ -2907,7 +2919,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='4.9';
+const VERSION='4.9.1';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
