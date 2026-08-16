@@ -2609,16 +2609,30 @@ function blocRespi(){
   const R=respiData();
   const op=openTool==='respi';
   const p=R.perso;
+  const ed=editTool.has('respi');
   let h=`<div class="acc pan ${op?'open':''}">
     <button class="acchead" data-tool="respi"><span class="t">Respiration</span>
       <span class="meta">${R.seances.length||'—'}</span><span class="c">›</span></button>
     <div class="accbody">
-      <p class="rule">Vibration simple pour inspirer, double pour expirer. Tu peux fermer les yeux.
-Les blocages laissés à zéro n'apparaissent pas dans le cycle.</p>
-      <div class="sub" style="margin-bottom:8px">Préréglages</div>
-      <div class="prechoix">${RESPI_PRE.map(x=>
-        `<button data-respipre="${x.k}"><b>${x.n}</b><span>${x.i}-${x.b1?x.b1+'-':''}${x.e}${x.b2?'-'+x.b2:''} · ${x.min} min</span></button>`).join('')}</div>
-      <div class="sub" style="margin:18px 0 8px">Ton réglage</div>
+      <p class="rule">Vibration simple pour inspirer, double pour expirer. Tu peux fermer les yeux.</p>`;
+
+  /* --- préréglages --- */
+  const o1=openPool.has('respipre');
+  h+=`<div class="acc pan ${o1?'open':''}">
+    <button class="acchead" data-pool="respipre"><span class="t">Préréglages</span>
+      <span class="meta">${RESPI_PRE.length}</span><span class="c">›</span></button>
+    <div class="accbody"><div class="prechoix">${RESPI_PRE.map(x=>
+      `<button data-respipre="${x.k}"><b>${x.n}</b><span>${x.i}-${x.b1?x.b1+'-':''}${x.e}${x.b2?'-'+x.b2:''} · ${x.min} min</span>
+       <span style="text-transform:none;letter-spacing:0;font-family:'Barlow',sans-serif;font-size:13px;color:var(--dim);margin-top:5px">${x.d}</span></button>`).join('')}
+    </div></div></div>`;
+
+  /* --- réglage perso --- */
+  const o2=openPool.has('respiperso');
+  h+=`<div class="acc pan ${o2?'open':''}" style="margin-top:9px">
+    <button class="acchead" data-pool="respiperso"><span class="t">Mon réglage</span>
+      <span class="meta">${p.i}-${p.b1?p.b1+'-':''}${p.e}${p.b2?'-'+p.b2:''}</span><span class="c">›</span></button>
+    <div class="accbody">
+      <p class="rule">Un blocage laissé à zéro n'apparaît pas dans le cycle.</p>
       <div class="respigrid">
         <div><label>Inspire</label><input type="number" id="r-i" value="${p.i}" inputmode="numeric"></div>
         <div><label>Bloque</label><input type="number" id="r-b1" value="${p.b1}" inputmode="numeric"></div>
@@ -2626,29 +2640,44 @@ Les blocages laissés à zéro n'apparaissent pas dans le cycle.</p>
         <div><label>Bloque</label><input type="number" id="r-b2" value="${p.b2}" inputmode="numeric"></div>
         <div><label>Minutes</label><input type="number" id="r-min" value="${p.min}" inputmode="numeric"></div>
       </div>
-      <button class="btn" id="r-go" style="width:100%">Lancer</button>
+      <button class="btn" id="r-go" style="width:100%">Lancer</button></div></div>`;
 
-      <div class="sub" style="margin:20px 0 8px">Apnée · table CO2</div>
-      <p class="empty" style="margin-top:-2px">Huit rétentions de durée égale, repos décroissant.
-        Habitue le corps à l'envie de respirer. À faire à sec uniquement.</p>
+  /* --- apnée --- */
+  const o3=openPool.has('respiapn');
+  h+=`<div class="acc pan ${o3?'open':''}" style="margin-top:9px">
+    <button class="acchead" data-pool="respiapn"><span class="t">Apnée · table CO2</span>
+      <span class="meta">${R.max?R.max+' s':'—'}</span><span class="c">›</span></button>
+    <div class="accbody">
+      <p class="rule">Huit rétentions de durée égale, repos décroissant. Habitue le corps à l'envie de respirer.</p>
       <div class="two"><div><label>Ton max en apnée (s)</label>
         <input type="number" id="r-max" value="${R.max||''}" inputmode="numeric" placeholder="90"></div>
         <div style="display:flex;align-items:flex-end"><button class="btn ghost" id="r-co2" style="width:100%">Lancer la table</button></div></div>
-      <div class="bexp" style="border-color:rgba(169,59,39,.5);margin-top:12px">
+      ${R.max?`<p class="empty" style="margin-top:-2px">Rétentions de ${fmt(Math.round(R.max*0.7))} · repos de 2:00 à 45s.</p>`:''}
+      <div class="bexp" style="border-color:rgba(169,59,39,.5);margin-top:10px">
         <b style="color:var(--rouge)">Sécurité</b>Jamais dans l'eau. Jamais seul si tu débutes.
-        Assis ou allongé, à sec. Tu arrêtes à la moindre sensation anormale — le bouton est toujours là.</div>`;
+        Assis ou allongé, à sec. Tu arrêtes à la moindre sensation anormale.</div></div></div>`;
+
+  /* --- séances --- */
   if(R.seances.length){
-    const o=openPool.has('respih');
-    h+=`<div class="acc pan ${o?'open':''}" style="margin-top:14px">
+    const o4=openPool.has('respih');
+    h+=`<div class="acc pan ${o4?'open':''}" style="margin-top:9px">
       <button class="acchead" data-pool="respih"><span class="t">Séances</span>
         <span class="meta">${R.seances.length}</span><span class="c">›</span></button>
       <div class="accbody">`;
-    R.seances.slice().reverse().slice(0,20).forEach((x,i)=>{
+    const l=R.seances;
+    const j7=l.filter(x=>x.ts.slice(0,10)>=shift(new Date(),-6));
+    h+=`<div class="kpis" style="margin-bottom:12px">
+      <div class="pan"><div class="v">${j7.length}</div><div class="l">7<br>jours</div></div>
+      <div class="pan"><div class="v">${fmt(j7.reduce((a,b)=>a+b.duree,0))}</div><div class="l">Temps<br>cumulé</div></div>
+      <div class="pan"><div class="v">${l.filter(x=>x.complete).length}</div><div class="l">Menées<br>au bout</div></div></div>`;
+    l.map((x,i)=>({x,i})).reverse().slice(0,30).forEach(({x,i})=>{
       const d=new Date(x.ts);
-      h+=`<div class="mrow"><span>${esc(x.nom)}
-        <em style="font-style:normal;color:var(--dim)"> · ${DOW[d.getDay()]} ${d.getDate()} ${MSHORT[d.getMonth()]}</em></span>
-        <span class="pct">${fmt(x.duree)}${x.complete?'':' · arrêtée'}</span></div>`;});
-    h+=`</div></div>`;
+      h+=`<div class="depline"><i style="background:${x.complete?'var(--vert)':'var(--dim)'}"></i>
+        <span class="dl">${esc(x.nom)}<em>${DOW[d.getDay()]} ${d.getDate()} ${MSHORT[d.getMonth()]} · ${String(d.getHours()).padStart(2,'0')}h${String(d.getMinutes()).padStart(2,'0')}${x.complete?'':' · arrêtée'}${x.detail?' · '+esc(x.detail):''}</em></span>
+        <span class="dv">${fmt(x.duree)}</span>
+        ${ed?`<button class="del" data-delresp="${i}" style="font-size:16px">×</button>`:''}</div>`;});
+    h+=`<button class="edtog${ed?' on':''}" data-edtool="respi">${ed?'Terminer':'Modifier les entrées'}</button>
+      </div></div>`;
   }
   return h+`</div></div>`;
 }
@@ -2714,6 +2743,9 @@ function respiFin(){
   clearInterval(respiT);respiT=null;
   const R=respiData();
   R.seances.push({ts:new Date().toISOString(),nom:respiCfg.nom,
+    detail:respiCfg.table
+      ?`${respiCfg.table.length} cycles · rétention ${fmt(respiCfg.table[0].retention)}`
+      :`${respiCfg.i}-${respiCfg.b1?respiCfg.b1+'-':''}${respiCfg.e}${respiCfg.b2?'-'+respiCfg.b2:''} · ${respiCfg.min} min`,
     duree:Math.round((Date.now()-respiEtat.debut)/1000),complete:respiEtat.complete});
   save();
   const r=document.getElementById('ring');if(r)r.classList.remove('big');
@@ -3362,7 +3394,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='5.2';
+const VERSION='5.3';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -3759,7 +3791,7 @@ document.addEventListener('click',e=>{
   if(d.bar){palOpen=(palOpen===d.bar)?null:d.bar;return renderGoals();}
   if(d.pool){
     if(openPool.has(d.pool))openPool.delete(d.pool);else openPool.add(d.pool);
-    return ['depcat','deplig','cmcz','cmnotes','cmep'].includes(d.pool)?renderTools():renderGoals();}
+    return ['depcat','deplig','cmcz','cmnotes','cmep','respipre','respiperso','respiapn','respih'].includes(d.pool)?renderTools():renderGoals();}
   if(d.pick){const[k,id]=d.pick.split('|');
     const pool=k==='rec'?S.recPool:S.punPool;
     const x=pool.find(y=>y.id===id);if(!x)return;
@@ -3784,6 +3816,8 @@ document.addEventListener('click',e=>{
     if(x)respiLance({nom:x.n,i:x.i,b1:x.b1,e:x.e,b2:x.b2,min:x.min});
     return;}
   if(d.respistop)return respiStop();
+  if(d.delresp){if(confirm('Supprimer cette séance ?')){
+    S.respi.seances.splice(+d.delresp,1);save();renderTools();}return;}
   if(d.poidsprof)return formPoidsProfil();
   if(d.addpoids)return formPoids();
   if(d.delpoids){S.poids.entries=S.poids.entries.filter(x=>x.date!==d.delpoids);save();renderTools();return;}
