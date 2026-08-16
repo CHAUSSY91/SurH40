@@ -201,6 +201,21 @@ taux de passage, répartition par créneau de 2 h — la vue la plus importante 
 causes de *Ça creuse*, jours propres, pensées notées. Aucune interprétation
 automatique, aucun message de coaching. Les chiffres, rien d'autre.
 
+### Respiration
+Outils → Respiration. Quatre préréglages (Cohérence 5-5, Carré 4-4-4-4, 4-7-8,
+Expiration longue 4-6) et un réglage libre : inspire, bloque, expire, bloque,
+durée. **Un blocage à zéro n'apparaît pas dans le cycle.**
+**Vibration simple pour inspirer, double pour expirer, rien pendant les blocages** —
+l'exercice se fait les yeux fermés. Aucune autorisation nécessaire : la vibration
+n'est pas une notification. Bouton d'arrêt permanent, la séance est enregistrée
+même interrompue.
+
+**Table CO2** : huit rétentions égales à 70 % du max déclaré, repos décroissant
+de 2 min à 45 s. Habitue le corps à l'envie de respirer — c'est la table
+accessible aux débutants, la table O2 viendra plus tard.
+*Sécurité affichée dans le module* : jamais dans l'eau, jamais seul si débutant,
+à sec, assis ou allongé, arrêt à la moindre sensation anormale.
+
 ### Suivi de poids
 Points bruts en gris + **tendance sur 7 relevés** en vert. C'est la ligne verte
 qui compte : les variations quotidiennes sont de l'eau et du sel, pas de la graisse.
@@ -245,5 +260,5 @@ est supprimé par Google.
 ## 8. Méthode de travail
 
 Chaque version est validée par une suite de tests automatisés qui simule un vrai
-parcours dans l'appli — 561 vérifications à ce jour. Toute demande est **cadrée
+parcours dans l'appli — 597 vérifications à ce jour. Toute demande est **cadrée
 avant d'être codée** : on discute, tu valides, je code.

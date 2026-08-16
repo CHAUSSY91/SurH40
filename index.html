@@ -571,6 +571,16 @@ span.chip{cursor:default}
 .calmnote input{margin-bottom:10px}
 .calmlien{background:none;border:0;color:var(--bronze);font-size:13.5px;cursor:pointer;
   text-decoration:underline;text-underline-offset:3px;padding:4px}
+.prechoix{display:flex;flex-direction:column;gap:7px}
+.prechoix button{background:rgba(0,0,0,.22);border:1px solid var(--trait);border-radius:var(--r);
+  color:var(--marbre);font:inherit;text-align:left;padding:12px 14px;cursor:pointer}
+.prechoix button:hover{border-color:var(--or)}
+.prechoix b{display:block;font-size:15px;font-weight:600}
+.prechoix span{display:block;font-family:'Barlow Condensed',sans-serif;font-size:11.5px;
+  letter-spacing:.14em;color:var(--dim);margin-top:3px}
+.respigrid{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px}
+.respigrid input{margin-bottom:0;padding:10px 4px;text-align:center;font-size:15px}
+.respigrid label{font-size:9.5px;letter-spacing:.08em;text-align:center}
 .calmplaf{font-family:'Barlow Condensed',sans-serif;font-size:12px;letter-spacing:.12em;
   color:var(--dim);margin:0}
 .calmwrap{display:flex;flex-direction:column;align-items:center;gap:26px}
@@ -723,7 +733,7 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  depenses:{cats:[],items:[]},coleres:[],plafonds:{},tireDepart:null,gcal:{on:false,events:[],synced:null},poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,cmPompes:20,cmGainage:45,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  depenses:{cats:[],items:[]},respi:{max:0,seances:[],perso:{i:5,b1:0,e:5,b2:0,min:5}},coleres:[],plafonds:{},tireDepart:null,gcal:{on:false,events:[],synced:null},poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,cmPompes:20,cmGainage:45,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
@@ -1165,7 +1175,7 @@ function renderHome(){
   rows.push(`<button class="row pan" data-go="stat"><span class="nm">Stat</span><span class="meta">3 mois</span></button>`);
   rows.push(`<button class="row pan" data-go="goals"><span class="nm">Objectifs</span><span class="meta">${streakDays()} j de série</span></button>`);
   rows.push(`<button class="row pan" data-go="notes"><span class="nm">Idées en vrac</span><span class="meta">${(S.notes||[]).length||'—'}</span></button>`);
-  rows.push(`<button class="row pan" data-go="tools"><span class="nm">Outils</span><span class="meta">${allTools().length+4} fiches</span></button>`);
+  rows.push(`<button class="row pan" data-go="tools"><span class="nm">Outils</span><span class="meta">${allTools().length+5} fiches</span></button>`);
   rows.push(`<button class="row pan" data-go="set"><span class="nm">Réglages</span><span class="meta">${S.settings.rappels&&S.settings.rappels.on?'rappels actifs':'—'}</span></button>`);
   document.getElementById('rows').innerHTML=rows.join('');
 
@@ -1797,6 +1807,7 @@ const TOOLS=[
 function allTools(){return TOOLS.concat((S.customTools||[]).map(c=>({k:c.k,t:c.t,r:c.r,custom:true})));}
 function renderTools(){
   let h=blocPoids();
+  h+=blocRespi();
   h+=blocDepenses();
   const edP=editTool.has('prov');
   h+=`<div class="acc pan ${openTool==='prov'?'open':''}">
@@ -1860,6 +1871,17 @@ function renderTools(){
   h+=blocColeres();
   h+=`<button class="add" data-newtool="1" style="margin-top:6px">+ Ajouter un outil</button>`;
   document.getElementById('tools').innerHTML=h;
+  const rg=document.getElementById('r-go');
+  if(rg)rg.onclick=()=>{
+    const v=id=>Math.max(0,+document.getElementById(id).value||0);
+    const cfg={i:v('r-i'),b1:v('r-b1'),e:v('r-e'),b2:v('r-b2'),min:Math.max(1,v('r-min'))};
+    S.respi.perso=cfg;save();
+    respiLance(Object.assign({nom:`${cfg.i}-${cfg.b1?cfg.b1+'-':''}${cfg.e}${cfg.b2?'-'+cfg.b2:''}`},cfg));};
+  const rc=document.getElementById('r-co2');
+  if(rc)rc.onclick=()=>{
+    const m=+document.getElementById('r-max').value||0;
+    if(m<20){toast('Indique ton max, au moins 20 s');return;}
+    S.respi.max=m;save();respiCO2(m);};
 }
 function formNewTool(){
   sheetOpen(`<h3>Nouvel outil</h3>
@@ -2559,6 +2581,182 @@ function formDep(id){
   setTimeout(()=>{const f=document.getElementById('d-lab');if(f)f.focus();},90);
 }
 
+
+/* ================= RESPIRATION ================= */
+const RESPI_PRE=[
+ {k:'coh', n:'Cohérence 5-5', i:5,b1:0,e:5,b2:0, min:5,  d:"Six cycles par minute. Le rythme de référence pour faire redescendre la tension."},
+ {k:'carre',n:'Carré 4-4-4-4', i:4,b1:4,e:4,b2:4, min:5,  d:"Quatre temps égaux. Concentration et calme, sans somnolence."},
+ {k:'478', n:'4-7-8',          i:4,b1:7,e:8,b2:0, min:4,  d:"Expiration longue. Pour s'endormir ou redescendre vite."},
+ {k:'long',n:'Expiration longue 4-6', i:4,b1:0,e:6,b2:0, min:6, d:"Sans blocage, très accessible. Le plus simple pour commencer."}];
+let respiCfg=null,respiT=null,respiP=null,respiEtat=null;
+
+function respiData(){
+  S.respi=S.respi||{max:0,seances:[],perso:{i:5,b1:0,e:5,b2:0,min:5}};
+  return S.respi;
+}
+function vibre(motif){try{if(navigator.vibrate)navigator.vibrate(motif);}catch(e){}}
+
+/* ---- table CO2 : 8 rétentions égales, repos décroissant ---- */
+function tableCO2(maxSec){
+  const ret=Math.round(maxSec*0.7);
+  const repos=[120,110,100,90,75,60,50,45];
+  return repos.map((r,k)=>({n:k+1,retention:ret,repos:k<7?r:0}));
+}
+function fmt(s){return s>=60?`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`:String(s)+'s';}
+
+/* ---------- écran de réglage ---------- */
+function blocRespi(){
+  const R=respiData();
+  const op=openTool==='respi';
+  const p=R.perso;
+  let h=`<div class="acc pan ${op?'open':''}">
+    <button class="acchead" data-tool="respi"><span class="t">Respiration</span>
+      <span class="meta">${R.seances.length||'—'}</span><span class="c">›</span></button>
+    <div class="accbody">
+      <p class="rule">Vibration simple pour inspirer, double pour expirer. Tu peux fermer les yeux.
+Les blocages laissés à zéro n'apparaissent pas dans le cycle.</p>
+      <div class="sub" style="margin-bottom:8px">Préréglages</div>
+      <div class="prechoix">${RESPI_PRE.map(x=>
+        `<button data-respipre="${x.k}"><b>${x.n}</b><span>${x.i}-${x.b1?x.b1+'-':''}${x.e}${x.b2?'-'+x.b2:''} · ${x.min} min</span></button>`).join('')}</div>
+      <div class="sub" style="margin:18px 0 8px">Ton réglage</div>
+      <div class="respigrid">
+        <div><label>Inspire</label><input type="number" id="r-i" value="${p.i}" inputmode="numeric"></div>
+        <div><label>Bloque</label><input type="number" id="r-b1" value="${p.b1}" inputmode="numeric"></div>
+        <div><label>Expire</label><input type="number" id="r-e" value="${p.e}" inputmode="numeric"></div>
+        <div><label>Bloque</label><input type="number" id="r-b2" value="${p.b2}" inputmode="numeric"></div>
+        <div><label>Minutes</label><input type="number" id="r-min" value="${p.min}" inputmode="numeric"></div>
+      </div>
+      <button class="btn" id="r-go" style="width:100%">Lancer</button>
+
+      <div class="sub" style="margin:20px 0 8px">Apnée · table CO2</div>
+      <p class="empty" style="margin-top:-2px">Huit rétentions de durée égale, repos décroissant.
+        Habitue le corps à l'envie de respirer. À faire à sec uniquement.</p>
+      <div class="two"><div><label>Ton max en apnée (s)</label>
+        <input type="number" id="r-max" value="${R.max||''}" inputmode="numeric" placeholder="90"></div>
+        <div style="display:flex;align-items:flex-end"><button class="btn ghost" id="r-co2" style="width:100%">Lancer la table</button></div></div>
+      <div class="bexp" style="border-color:rgba(169,59,39,.5);margin-top:12px">
+        <b style="color:var(--rouge)">Sécurité</b>Jamais dans l'eau. Jamais seul si tu débutes.
+        Assis ou allongé, à sec. Tu arrêtes à la moindre sensation anormale — le bouton est toujours là.</div>`;
+  if(R.seances.length){
+    const o=openPool.has('respih');
+    h+=`<div class="acc pan ${o?'open':''}" style="margin-top:14px">
+      <button class="acchead" data-pool="respih"><span class="t">Séances</span>
+        <span class="meta">${R.seances.length}</span><span class="c">›</span></button>
+      <div class="accbody">`;
+    R.seances.slice().reverse().slice(0,20).forEach((x,i)=>{
+      const d=new Date(x.ts);
+      h+=`<div class="mrow"><span>${esc(x.nom)}
+        <em style="font-style:normal;color:var(--dim)"> · ${DOW[d.getDay()]} ${d.getDate()} ${MSHORT[d.getMonth()]}</em></span>
+        <span class="pct">${fmt(x.duree)}${x.complete?'':' · arrêtée'}</span></div>`;});
+    h+=`</div></div>`;
+  }
+  return h+`</div></div>`;
+}
+
+/* ---------- séance en cycles ---------- */
+function respiLance(cfg){
+  respiCfg=cfg;
+  respiEtat={debut:Date.now(),phase:0,cycle:0,complete:false};
+  const phases=[];
+  if(cfg.i>0)phases.push(['inspire',cfg.i,[220]]);
+  if(cfg.b1>0)phases.push(['bloque',cfg.b1,null]);
+  if(cfg.e>0)phases.push(['expire',cfg.e,[110,90,110]]);
+  if(cfg.b2>0)phases.push(['bloque',cfg.b2,null]);
+  if(!phases.length){toast('Règle au moins une phase');return;}
+  respiCfg.phases=phases;
+  respiCfg.total=cfg.min*60;
+  document.getElementById('calm').classList.add('on');
+  respiEcran();
+  respiTick();
+}
+function respiEcran(){
+  cmBody().innerHTML=`<div class="calmwrap">
+      <div class="ring" id="ring"><span id="ringtxt"></span></div>
+      <div class="calmsec" id="rphase">—</div></div>
+    <p class="calmsous" id="rinfo"></p>
+    <div class="calmfin"><button data-respistop="1">Arrêter</button></div>`;
+}
+function respiTick(){
+  const ph=respiCfg.phases;
+  let idx=0,reste=ph[0][1],fin=Date.now()+respiCfg.total*1000;
+  const doux=window.matchMedia&&window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const applique=()=>{
+    const[nom,dur,vib]=ph[idx];
+    const t=document.getElementById('ringtxt'),r=document.getElementById('ring');
+    if(t)t.textContent=nom;
+    if(r&&!doux){
+      r.style.transitionDuration=dur+'s';
+      if(nom==='inspire')r.classList.add('big');
+      else if(nom==='expire')r.classList.remove('big');
+    }
+    if(vib)vibre(vib);
+  };
+  applique();
+  const maj=()=>{
+    const i=document.getElementById('rinfo');
+    if(i)i.textContent=`${respiCfg.nom} · ${fmt(Math.max(0,Math.round((fin-Date.now())/1000)))} restantes`;
+    const p=document.getElementById('rphase');
+    if(p)p.textContent=reste>0?reste:'';
+  };
+  maj();
+  respiT=setInterval(()=>{
+    reste--;
+    const p=document.getElementById('rphase');
+    if(p)p.textContent=reste>0?reste:'';
+    const i=document.getElementById('rinfo');
+    const rst=Math.max(0,Math.round((fin-Date.now())/1000));
+    if(i)i.textContent=`${respiCfg.nom} · ${fmt(rst)} restantes`;
+    if(Date.now()>=fin){respiEtat.complete=true;return respiFin();}
+    if(reste<=0){idx=(idx+1)%ph.length;reste=ph[idx][1];applique();}
+  },1000);
+}
+function respiFin(){
+  clearInterval(respiT);respiT=null;
+  const R=respiData();
+  R.seances.push({ts:new Date().toISOString(),nom:respiCfg.nom,
+    duree:Math.round((Date.now()-respiEtat.debut)/1000),complete:respiEtat.complete});
+  save();
+  const r=document.getElementById('ring');if(r)r.classList.remove('big');
+  cmBody().innerHTML=`<p class="calmsous">${respiEtat.complete?'Séance terminée.':'Séance arrêtée.'}</p>`;
+  setTimeout(()=>{document.getElementById('calm').classList.remove('on');render();},1600);
+}
+
+/* ---------- table CO2 ---------- */
+function respiCO2(maxSec){
+  const t=tableCO2(maxSec);
+  respiCfg={nom:'Table CO2',table:t};
+  respiEtat={debut:Date.now(),complete:false};
+  document.getElementById('calm').classList.add('on');
+  co2Etape(0,'repos');
+}
+function co2Etape(k,mode){
+  const t=respiCfg.table;
+  if(k>=t.length){respiEtat.complete=true;return respiFin();}
+  const c=t[k];
+  const dur=mode==='repos'?(k===0?60:t[k-1].repos):c.retention;
+  if(mode==='repos'&&dur===0)return co2Etape(k,'apnee');
+  cmBody().innerHTML=`<p class="calmsous">Cycle ${k+1} sur ${t.length}</p>
+    <p class="consigne">${mode==='repos'?'Respire normalement.':'Retiens.'}</p>
+    <p class="calmgros" id="rphase">${fmt(dur)}</p>
+    <p class="calmsous">${mode==='repos'?`Rétention de ${fmt(c.retention)} ensuite.`:''}</p>
+    <div class="calmfin"><button data-respistop="1">Arrêter</button></div>`;
+  vibre(mode==='repos'?[110,90,110]:[220]);
+  let r=dur;
+  clearInterval(respiT);
+  respiT=setInterval(()=>{
+    r--;
+    const p=document.getElementById('rphase');
+    if(p)p.textContent=fmt(Math.max(0,r));
+    if(r<=0){clearInterval(respiT);
+      if(mode==='repos')co2Etape(k,'apnee');else co2Etape(k+1,'repos');}
+  },1000);
+}
+function respiStop(){
+  clearInterval(respiT);respiT=null;
+  if(respiEtat)respiFin();
+  else{document.getElementById('calm').classList.remove('on');render();}
+}
+
 /* ================= ÇA MONTE ================= */
 /* Module d'observation. Ne touche jamais aux écarts, aux séries, aux punitions
    ni au score. Aucun mot de jugement, aucun son, aucune vibration. */
@@ -3164,7 +3362,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='5.1';
+const VERSION='5.2';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -3272,6 +3470,8 @@ function renderSet(){
     <div class="mrow"><span>Version</span><span class="pct">SurH40 ${VERSION}</span></div>
     <div class="mrow"><span>Mode hors ligne</span><span class="pct">${('serviceWorker' in navigator)?'disponible':'non supporté'}</span></div></div>`;
   document.getElementById('set').innerHTML=h;
+  const rgo=document.getElementById('r-go');
+  if(rgo)rgo.onclick=()=>{};
   const cms=document.getElementById('cmsave');
   if(cms)cms.onclick=()=>{
     S.settings.cmPompes=+document.getElementById('cm-p').value||20;
@@ -3579,6 +3779,11 @@ document.addEventListener('click',e=>{
     if(k==='rec')S.recPool=S.recPool.filter(x=>x.id!==id);
     else S.punPool=S.punPool.filter(x=>x.id!==id);
     save();renderGoals();return;}
+  if(d.respipre){
+    const x=RESPI_PRE.find(y=>y.k===d.respipre);
+    if(x)respiLance({nom:x.n,i:x.i,b1:x.b1,e:x.e,b2:x.b2,min:x.min});
+    return;}
+  if(d.respistop)return respiStop();
   if(d.poidsprof)return formPoidsProfil();
   if(d.addpoids)return formPoids();
   if(d.delpoids){S.poids.entries=S.poids.entries.filter(x=>x.date!==d.delpoids);save();renderTools();return;}
