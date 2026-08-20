@@ -115,7 +115,10 @@ série plus dure à tenir. Ici, monter de palier est une reconnaissance.
 Le vert ne veut dire qu'une chose dans l'appli : « c'est fait ».
 
 ### Les écarts
-**Un écart = une journée**, pas une ligne. Une journée compte si tu y as noté un
+**Un écart = une journée**, pas une ligne. Les journées déjà sanctionnées sont
+**mémorisées par leur date**, pas par un total : sinon le glissement de la
+fenêtre de 15 jours annulait les écarts récents avec des anciens sortis du
+comptage, et le compteur restait bloqué à zéro. Une journée compte si tu y as noté un
 CHEAT ou laissé un Bad Habit non tenu.
 *Pourquoi* : compter par ligne produisait 6 écarts pour 3 journées avec 2 Bad
 Habits suivis — le système punissait dix fois plus vite qu'il ne récompensait.
@@ -260,5 +263,5 @@ est supprimé par Google.
 ## 8. Méthode de travail
 
 Chaque version est validée par une suite de tests automatisés qui simule un vrai
-parcours dans l'appli — 606 vérifications à ce jour. Toute demande est **cadrée
+parcours dans l'appli — 622 vérifications à ce jour. Toute demande est **cadrée
 avant d'être codée** : on discute, tu valides, je code.

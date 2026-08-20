@@ -733,7 +733,7 @@ const store={
 };
 const BLANK={items:[],log:{},events:{},journal:{},meals:{},rewards:[],punitions:[],
   evts:[],gobjs:[],customTools:[],tools:{vision:[],cookie:[],quarante:[],raa:[],miroir:[],dea:[]},proverbs:[],
-  depenses:{cats:[],items:[]},respi:{max:0,seances:[],perso:{i:5,b1:0,e:5,b2:0,min:5}},coleres:[],plafonds:{},tireDepart:null,gcal:{on:false,events:[],synced:null},poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,cmPompes:20,cmGainage:45,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
+  depenses:{cats:[],items:[]},respi:{max:0,seances:[],perso:{i:5,b1:0,e:5,b2:0,min:5}},coleres:[],plafonds:{},tireDepart:null,gcal:{on:false,events:[],synced:null},poids:{profil:null,entries:[]},notes:[],recPool:[],punPool:[],credits:{rec:0,pun:0},sanctionnes:[],awards:[],recGiven:0,popGiven:0,families:[],gpauses:[],library:[],cheats:{},debts:[],settings:{window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,cmPompes:20,cmGainage:45,rappels:{on:false,matin:'07:00',soir:'21:30'}},baseline:0};
 let S=JSON.parse(JSON.stringify(BLANK));
 let cursor=new Date();cursor.setHours(12,0,0,0);
 let monthCursor=new Date();
@@ -1015,11 +1015,17 @@ function ecartsOn(date){
   if((S.cheats[date]||[]).length)return 1;
   return itemsFor('soir','bad',date).some(i=>!isDone(i.id,date))?1:0;
 }
-function ecartsWindow(){
+function joursEcart(){
   let l=lastDays(S.settings.window);
   const from=S.settings.ecartsFrom;
   if(from)l=l.filter(d=>d>=from);
-  return l.reduce((a,d)=>a+ecartsOn(d),0);
+  return l.filter(d=>ecartsOn(d)>0);
+}
+function ecartsWindow(){return joursEcart().length;}
+/* les journées d'écart qui n'ont pas encore donné lieu à une punition */
+function ecartsNonSanctionnes(){
+  const s=new Set(S.sanctionnes||[]);
+  return joursEcart().filter(d=>!s.has(d));
 }
 function openDebt(){return (S.awards||[]).find(a=>a.kind==='pun'&&!a.done);}
 function streakPropre(){
@@ -1042,12 +1048,17 @@ function seedPools(){
 function checkDebt(){
   S.credits=S.credits||{rec:0,pun:0};
   let maj=false;
-  const e=ecartsWindow();
+  S.sanctionnes=S.sanctionnes||[];
   const enFile=(S.credits.pun||0)+(S.awards||[]).filter(a=>a.kind==='pun'&&!a.done).length;
-  if(e-(S.baseline||0)>=S.settings.seuil){
-    if(enFile<PUN_MAX){S.credits.pun++;S.baseline=e;maj=true;}
-    /* file saturée : on ne perd rien, le compteur reste plein jusqu'à ce que tu vides */
+  const libres=ecartsNonSanctionnes();
+  if(libres.length>=S.settings.seuil&&enFile<PUN_MAX){
+    /* on marque exactement les journées qui viennent d'être sanctionnées */
+    S.sanctionnes=S.sanctionnes.concat(libres.slice(0,S.settings.seuil));
+    S.credits.pun++;maj=true;
   }
+  /* purge : inutile de garder des dates sorties de la fenêtre */
+  const limite=shift(new Date(),-(S.settings.window+40));
+  S.sanctionnes=S.sanctionnes.filter(d=>d>=limite);
   const st=streakDays(),paliers=Math.floor(st/SERIE_REC);
   if(paliers>(S.recGiven||0)){S.credits.rec+=paliers-(S.recGiven||0);S.recGiven=paliers;maj=true;}
   if(paliers<(S.recGiven||0)){S.recGiven=paliers;maj=true;}
@@ -1661,7 +1672,7 @@ function renderGoals(){
 
   /* écarts, juste avant les punitions */
   /* le compteur continue de tourner même pendant une punition : aucune fenêtre de gratuité */
-  const net=Math.max(0,ec-(S.baseline||0));
+  const net=ecartsNonSanctionnes().length;
   const enCoursPun=(S.awards||[]).filter(a=>a.kind==='pun'&&!a.done);
   const file=(cr.pun||0)+enCoursPun.length;
   const sature=file>=PUN_MAX;
@@ -1681,7 +1692,7 @@ function renderGoals(){
       ${file?`<p class="ecfile">En attente : ${file} punition${file>1?'s':''}. Le compteur continue de tourner —
         un écart de plus pendant qu'une dette traîne en ajoute une autre${sature?`, et rien ne se perd : dès que tu en règles une, la suivante prend sa place`:''}.</p>`:''}
       <p class="ecprop">Série propre : <b>${sp} jour${sp>1?'s':''}</b> sans écart · récompense d'exception à ${SERIE_PROPRE}.
-        ${(S.baseline||0)>0?`<br>${ec} écarts au total sur ${S.settings.window} jours, dont ${S.baseline} déjà sanctionnés.`:''}</p></div></div>`;
+        ${ec>net?`<br>${ec} journée${ec>1?'s':''} d'écart sur ${S.settings.window} jours, dont ${ec-net} déjà sanctionnée${ec-net>1?'s':''}.`:''}</p></div></div>`;
 
   /* punitions */
   h+=blocPoints('pun',cr.pun,S.punPool);
@@ -3394,7 +3405,7 @@ function convertNote(kind,id){
 }
 
 /* ================= RÉGLAGES / SAUVEGARDE / RAPPELS ================= */
-const VERSION='5.3';
+const VERSION='5.3.1';
 function lastExportLabel(){
   if(!S.lastExport)return 'jamais';
   const d=new Date(S.lastExport),j=Math.floor((Date.now()-d)/86400000);
@@ -3621,7 +3632,7 @@ function wizReset(step,per){
       S.gpauses=(S.gpauses||[]).filter(p=>!chevauche(p));
     }
     S.settings.statsFrom=today();S.settings.ecartsFrom=shift(new Date(),1);
-    S.debts=[];S.baseline=0;S.awards=[];S.credits={rec:0,pun:0};S.recGiven=0;S.popGiven=0;
+    S.debts=[];S.baseline=0;S.sanctionnes=[];S.awards=[];S.credits={rec:0,pun:0};S.recGiven=0;S.popGiven=0;
     save();sheetClose();render();toast('Nouveau départ');};
 }
 function stamp(){
@@ -3938,6 +3949,11 @@ document.getElementById('send-month').onclick=()=>{SEND=true;reportMonth(cursor)
         note:'',recurrent:false,days:null,date:k,from:null})));}
   if(saved)S=Object.assign(JSON.parse(JSON.stringify(BLANK)),saved,
     {settings:Object.assign({window:15,seuil:3,delai:5,statsFrom:null,ecartsFrom:null,gcalMasque:false,backupSnooze:null,cmPompes:20,cmGainage:45,rappels:{on:false,matin:'07:00',soir:'21:30'}},saved.settings||{})});
+  /* migration : l'ancien repère numérique devient une liste de journées */
+  if(!S.sanctionnes&&(S.baseline||0)>0){
+    S.sanctionnes=joursEcart().slice(0,S.baseline);
+  }
+  S.sanctionnes=S.sanctionnes||[];
   reindexAll();
   render();planRappels();
   try{history.replaceState({v:'home'},'');}catch(e){}
